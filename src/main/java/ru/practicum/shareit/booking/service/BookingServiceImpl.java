@@ -42,19 +42,10 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingDto createBooking(Long userId, BookingDto bookingDto) {
+        validateUser(userId);
         Booking booking = toBooking(bookingDto);
-        checkItemOwner(userId);
         ItemDto itemDto = itemServiceImpl.getItemById(bookingDto.getItemId());
-        if (userId.equals(itemDto.getOwner())) {
-            throw new EntityNotFoundException("Владелец не может бронировать предмет.");
-        }
-        if (!itemDto.getAvailable()) {
-            throw new ValidationException("Предмет занят другим пользователем.");
-        }
-        if (bookingDto.getStart().isAfter(bookingDto.getEnd())
-                || bookingDto.getStart().isBefore(LocalDateTime.now())) {
-            throw new ValidationException("Некорректная даты бронирования");
-        }
+        validateForBookingCreation(userId, itemDto, bookingDto);
         booking.setItemId(toItem(itemServiceImpl.getItemById(bookingDto.getItemId())).getId());
         booking.setStart(bookingDto.getStart());
         booking.setEnd(bookingDto.getEnd());
@@ -76,9 +67,7 @@ public class BookingServiceImpl implements BookingService {
         } else {
             approved = "REJECTED";
         }
-        if (bookingDto.getStatus().toString().equals(approved)) {
-            throw new ValidationException("Нельзя изменить статус на идентичный");
-        }
+        validateForBookingUpdate(approved, bookingDto);
         bookingDto.setStatus(BookingState.valueOf(approved));
         bookingRepository.save(toBooking(bookingDto));
         return ItemWithBookingDto.builder()
@@ -113,8 +102,51 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public List<ItemWithBookingDto> getAllBookingsByUserId(Long userId, String state) {
-        checkItemOwner(userId);
+        validateUser(userId);
         List<ItemWithBookingDto> itemWithBookingDtos = new ArrayList<>();
+        validateBookingsForBooker(userId, state, itemWithBookingDtos);
+        itemWithBookingDtos.sort(Comparator.comparing(ItemWithBookingDto::getStart).reversed());
+        return itemWithBookingDtos;
+    }
+
+    @Override
+    public List<ItemWithBookingDto> getAllBookingsForOwner(Long userId, String state) {
+        validateUser(userId);
+        List<ItemWithBookingDto> itemWithBookingDtos = new ArrayList<>();
+        validateBookingsForOwner(userId, state, itemWithBookingDtos);
+        itemWithBookingDtos.sort(Comparator.comparing(ItemWithBookingDto::getStart).reversed());
+        return itemWithBookingDtos;
+    }
+
+    private void validateUser(Long userId) {
+        userServiceImpl.getAllUsers().stream()
+                .filter(user -> user.getId().equals(userId))
+                .findAny()
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+    }
+
+    private void validateForBookingCreation(Long userId, ItemDto itemDto, BookingDto bookingDto) {
+        if (userId.equals(itemDto.getOwner())) {
+            throw new EntityNotFoundException("Владелец не может бронировать предмет.");
+        }
+        if (!itemDto.getAvailable()) {
+            throw new ValidationException("Предмет занят другим пользователем.");
+        }
+        if (bookingDto.getStart().isAfter(bookingDto.getEnd())
+                || bookingDto.getStart().isBefore(LocalDateTime.now())) {
+            throw new ValidationException("Некорректная даты бронирования");
+        }
+    }
+
+    private void validateForBookingUpdate(String approved, BookingDto bookingDto) {
+        if (bookingDto.getStatus().toString().equals(approved)) {
+            throw new ValidationException("Нельзя изменить статус на идентичный");
+        }
+    }
+
+    private void validateBookingsForBooker(Long userId,
+                                           String state,
+                                           List<ItemWithBookingDto> itemWithBookingDtos) {
         for (Booking booking : bookingRepository.findBookingsByBooker(userId)) {
             ItemDto itemDto = itemServiceImpl.getItemById(toBookingDto(booking).getItemId());
             switch (state) {
@@ -163,14 +195,11 @@ public class BookingServiceImpl implements BookingService {
                     throw new ValidationException(String.format("Unknown state: %s", state));
             }
         }
-        itemWithBookingDtos.sort(Comparator.comparing(ItemWithBookingDto::getStart).reversed());
-        return itemWithBookingDtos;
     }
 
-    @Override
-    public List<ItemWithBookingDto> getAllBookingsForOwner(Long userId, String state) {
-        checkItemOwner(userId);
-        List<ItemWithBookingDto> itemWithBookingDtos = new ArrayList<>();
+    private void validateBookingsForOwner(Long userId,
+                                          String state,
+                                          List<ItemWithBookingDto> itemWithBookingDtos) {
         for (Booking booking : bookingRepository.findBookingsByOwnerId(userId)) {
             ItemDto itemDto = itemServiceImpl.getItemById(toBookingDto(booking).getItemId());
             switch (state) {
@@ -219,14 +248,5 @@ public class BookingServiceImpl implements BookingService {
                     throw new ValidationException(String.format("Unknown state: %s", state));
             }
         }
-        itemWithBookingDtos.sort(Comparator.comparing(ItemWithBookingDto::getStart).reversed());
-        return itemWithBookingDtos;
-    }
-
-    private void checkItemOwner(Long userId) {
-        userServiceImpl.getAllUsers().stream()
-                .filter(user -> user.getId().equals(userId))
-                .findAny()
-                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
     }
 }

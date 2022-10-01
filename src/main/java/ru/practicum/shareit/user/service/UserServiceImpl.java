@@ -32,13 +32,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto updateUserById(Long userId, UserDto userDto) {
         User user = userRepository.findById(userId).orElseThrow();
-        User userFromDto = toUser(userDto);
-        if (userFromDto.getEmail() != null) {
-            user.setEmail(userFromDto.getEmail());
-        }
-        if (userDto.getName() != null) {
-            user.setName(userFromDto.getName());
-        }
+        validateForUserUpdate(user, userDto);
         userRepository.save(user);
         return toUserDto(user);
     }
@@ -65,5 +59,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUserById(Long userId) {
         userRepository.deleteById(userId);
+    }
+
+    private void validateForUserUpdate(User user, UserDto userDto) {
+        if (userDto.getEmail() != null) {
+            user.setEmail(userDto.getEmail());
+        }
+        if (userDto.getName() != null) {
+            user.setName(userDto.getName());
+        }
     }
 }

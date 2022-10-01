@@ -1,7 +1,6 @@
 package ru.practicum.shareit.request;
 
 import lombok.*;
-import org.hibernate.Hibernate;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -35,13 +34,16 @@ public class ItemRequest {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
         ItemRequest that = (ItemRequest) o;
-        return id != null && Objects.equals(id, that.id);
+        return Objects.equals(id, that.id)
+                && Objects.equals(description, that.description)
+                && Objects.equals(requestor, that.requestor)
+                && Objects.equals(created, that.created);
     }
 
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return Objects.hash(id, description, requestor, created);
     }
 }

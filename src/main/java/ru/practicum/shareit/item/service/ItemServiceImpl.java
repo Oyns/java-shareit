@@ -47,23 +47,18 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto postItem(Long userId, ItemDto itemDto) {
         validateItemDto(itemDto);
-        checkItemOwner(userId);
+        validateItemOwner(userId);
         itemDto.setOwner(userId);
         return toItemDto(itemRepository.save(toItem(itemDto)));
     }
 
     @Override
     public CommentDto postComment(Long userId, Long itemId, Comment comment) {
-        if (comment == null || comment.getText().isEmpty()) {
-            throw new ValidationException("Поле комментария не может быть пустым.");
-        }
-        checkItemOwner(userId);
+        validateForPostComment(itemId, comment);
+        validateItemOwner(userId);
         ItemDto itemDto = toItemDto(itemRepository.findById(itemId).orElseThrow());
         UserDto userDto = userServiceImpl.getUserById(userId);
         validateItemDto(itemDto);
-        if (bookingRepository.findBookingByItemIdAndEndIsAfter(itemId, LocalDateTime.now()) == null) {
-            throw new ValidationException("Вы не можете разместить комментарий.");
-        }
         CommentDto commentDto = new CommentDto();
         commentDto.setText(comment.getText());
         commentDto.setItem(itemDto);
@@ -75,22 +70,9 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto updateItemInfo(Long userId, Long itemId, ItemDto itemDto) {
-        checkItemOwner(userId);
+        validateItemOwner(userId);
         Item item = itemRepository.findById(itemId).orElse(null);
-        Item itemFromDto = toItem(itemDto);
-        assert item != null;
-        if (!item.getOwner().equals(userId) && item.getAvailable().equals(false)) {
-            throw new EntityNotFoundException("Нельзя изменить данные чужой вещи");
-        }
-        if (itemFromDto.getName() != null) {
-            item.setName(itemFromDto.getName());
-        }
-        if (itemFromDto.getDescription() != null) {
-            item.setDescription(itemFromDto.getDescription());
-        }
-        if (itemFromDto.getAvailable() != null && !itemFromDto.getAvailable().equals(item.getAvailable())) {
-            item.setAvailable(itemFromDto.getAvailable());
-        }
+        validateItemForUpdate(itemDto, item, userId);
         itemRepository.save(item);
         return toItemDto(item);
     }
@@ -98,18 +80,13 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto getItemById(Long itemId) {
-        try {
-            return toItemDto(itemRepository.findById(itemId).orElseThrow());
-        } catch (Exception e) {
-            throw new EntityNotFoundException("Предмета с таким id не существует");
-        }
+        validateItemExists(itemId);
+        return toItemDto(itemRepository.findById(itemId).orElseThrow());
     }
 
     @Override
     public ItemWithBookingHistory getItemByIdWithBookingHistory(Long userId, Long itemId) {
-        if (itemRepository.findById(itemId).orElse(null) == null) {
-            throw new EntityNotFoundException(String.format("Предмета с id %s не существует.", itemId));
-        }
+        validateItemExists(itemId);
         ItemWithBookingHistory itemWithBookingHistory = new ItemWithBookingHistory();
         ItemDto itemDto = toItemDto(itemRepository.findById(itemId).orElseThrow());
         List<ItemWithBookingHistory.CommentDto> commentDtos = new ArrayList<>();
@@ -196,10 +173,43 @@ public class ItemServiceImpl implements ItemService {
         return itemDtos;
     }
 
-    private void checkItemOwner(Long userId) {
+    private void validateItemOwner(Long userId) {
         userServiceImpl.getAllUsers().stream()
                 .filter(user -> user.getId().equals(userId))
                 .findAny()
                 .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+    }
+
+    private void validateItemExists(Long itemId) {
+        if (itemRepository.findById(itemId).orElse(null) == null) {
+            throw new EntityNotFoundException(String.format("Предмета с id %s не существует.", itemId));
+        }
+    }
+
+    private void validateForPostComment(Long itemId, Comment comment) {
+        if (comment == null || comment.getText().isEmpty()) {
+            throw new ValidationException("Поле комментария не может быть пустым.");
+        }
+        if (bookingRepository.findBookingByItemIdAndEndIsAfter(itemId, LocalDateTime.now()) == null) {
+            throw new ValidationException("Вы не можете разместить комментарий.");
+        }
+    }
+
+    private void validateItemForUpdate(ItemDto itemDto, Item item, Long userId) {
+        if (item == null) {
+            throw new ValidationException("Предмета не существует");
+        }
+        if (!item.getOwner().equals(userId) && item.getAvailable().equals(false)) {
+            throw new EntityNotFoundException("Нельзя изменить данные чужой вещи");
+        }
+        if (itemDto.getName() != null) {
+            item.setName(itemDto.getName());
+        }
+        if (itemDto.getDescription() != null) {
+            item.setDescription(itemDto.getDescription());
+        }
+        if (itemDto.getAvailable() != null && !itemDto.getAvailable().equals(item.getAvailable())) {
+            item.setAvailable(itemDto.getAvailable());
+        }
     }
 }
