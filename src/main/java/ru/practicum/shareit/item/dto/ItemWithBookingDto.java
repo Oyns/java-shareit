@@ -1,6 +1,7 @@
-package ru.practicum.shareit.booking.dto;
+package ru.practicum.shareit.item.dto;
 
 import lombok.*;
+import ru.practicum.shareit.booking.dto.BookerDto;
 import ru.practicum.shareit.booking.model.BookingState;
 
 import java.time.LocalDateTime;
@@ -11,11 +12,11 @@ import java.time.LocalDateTime;
 @Getter
 @EqualsAndHashCode(of = "id")
 @Builder
-public class BookingDto {
+public class ItemWithBookingDto {
     private Long id;
     private LocalDateTime start;
     private LocalDateTime end;
-    private Long itemId;
-    private Long bookerId;
     private BookingState status;
+    private BookerDto booker;
+    private ItemDto item;
 }
