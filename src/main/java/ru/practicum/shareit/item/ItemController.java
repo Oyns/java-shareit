@@ -2,8 +2,10 @@ package ru.practicum.shareit.item;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.item.dto.ItemWithBookingHistory;
+import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.service.ItemServiceImpl;
 
 import java.util.List;
@@ -21,32 +23,41 @@ public class ItemController {
 
     @PostMapping
     @ResponseBody
-    public Item postItem(@RequestHeader("X-Sharer-User-Id") String userId,
-                         @RequestBody ItemDto itemDto) {
+    public ItemDto postItem(@RequestHeader("X-Sharer-User-Id") Long userId,
+                            @RequestBody ItemDto itemDto) {
         return itemServiceImpl.postItem(userId, itemDto);
     }
 
-    @PatchMapping("{itemId}")
+    @PostMapping("/{itemId}/comment")
     @ResponseBody
-    public Item updateItemInfo(@RequestHeader("X-Sharer-User-Id") String userId,
-                               @PathVariable Long itemId,
-                               @RequestBody ItemDto itemDto) {
+    public CommentDto postComment(@RequestHeader("X-Sharer-User-Id") Long userId,
+                                  @PathVariable Long itemId,
+                                  @RequestBody Comment comment) {
+        return itemServiceImpl.postComment(userId, itemId, comment);
+    }
+
+    @PatchMapping("/{itemId}")
+    @ResponseBody
+    public ItemDto updateItemInfo(@RequestHeader("X-Sharer-User-Id") Long userId,
+                                  @PathVariable Long itemId,
+                                  @RequestBody ItemDto itemDto) {
         return itemServiceImpl.updateItemInfo(userId, itemId, itemDto);
     }
 
     @GetMapping("/{itemId}")
-    public Item getItemById(@PathVariable Long itemId) {
-        return itemServiceImpl.getItemById(itemId);
+    public ItemWithBookingHistory getItemByIdWithBookingHistory(@RequestHeader("X-Sharer-User-Id") Long userId,
+                                                                @PathVariable(required = false) Long itemId) {
+        return itemServiceImpl.getItemByIdWithBookingHistory(userId, itemId);
     }
 
     @GetMapping
-    public List<Item> getAllItems(@RequestHeader("X-Sharer-User-Id") String userId) {
+    public List<ItemWithBookingHistory> getAllItems(@RequestHeader("X-Sharer-User-Id") Long userId) {
         return itemServiceImpl.getAllItems(userId);
     }
 
     @GetMapping("/search")
-    public List<Item> itemsFromSearchResult(@RequestHeader("X-Sharer-User-Id") String userId,
-                                            @RequestParam String text) {
+    public List<ItemDto> searchItemsByUserId(@RequestHeader("X-Sharer-User-Id") Long userId,
+                                             @RequestParam String text) {
         return itemServiceImpl.searchForItemsResult(userId, text);
     }
 }

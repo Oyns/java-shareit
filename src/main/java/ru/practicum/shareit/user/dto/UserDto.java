@@ -7,6 +7,7 @@ import lombok.*;
 @Setter
 @Getter
 @ToString
+@Builder
 @EqualsAndHashCode(of = "id")
 public class UserDto {
     private Long id;
