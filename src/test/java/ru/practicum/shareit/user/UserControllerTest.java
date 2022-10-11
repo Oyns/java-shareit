@@ -8,6 +8,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.practicum.shareit.exception.EntityNotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.service.UserServiceImpl;
 
@@ -55,6 +57,45 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.id", is(userDto.getId()), Long.class))
                 .andExpect(jsonPath("$.name", is(userDto.getName())))
                 .andExpect(jsonPath("$.email", is(userDto.getEmail())));
+    }
+
+    @Test
+    void saveUserFailedId() throws Exception {
+        UserDto userDto1 = new UserDto(-100L, null, "");
+
+        when(userService.saveUser(userDto1)).thenThrow(ValidationException.class);
+
+        mvc.perform(post("/users")
+                        .content(mapper.writeValueAsString(userDto1))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void saveUserNotFound() throws Exception {
+        UserDto userDto1 = new UserDto(null, null, "");
+
+        when(userService.saveUser(userDto1)).thenThrow(EntityNotFoundException.class);
+
+        mvc.perform(post("/users")
+                        .content(mapper.writeValueAsString(userDto1))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void saveUserServerError() throws Exception {
+        UserDto userDto1 = new UserDto(null, null, "");
+
+        when(userService.saveUser(userDto1)).thenThrow(RuntimeException.class);
+
+        mvc.perform(post("/users")
+                        .content(mapper.writeValueAsString(userDto1))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError());
     }
 
     @Test

@@ -31,7 +31,9 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     private final ItemRepository itemRepository;
 
-    public ItemRequestServiceImpl(ItemRequestRepository itemRequestRepository, UserServiceImpl userServiceImpl, ItemRepository itemRepository) {
+    public ItemRequestServiceImpl(ItemRequestRepository itemRequestRepository,
+                                  UserServiceImpl userServiceImpl,
+                                  ItemRepository itemRepository) {
         this.itemRequestRepository = itemRequestRepository;
         this.userServiceImpl = userServiceImpl;
         this.itemRepository = itemRepository;

@@ -85,7 +85,8 @@ public class ItemControllerTest {
             .status(BookingState.APPROVED)
             .build();
 
-    private final ItemWithBookingHistory.CommentDto commentDto1 = new ItemWithBookingHistory.CommentDto(commentDto.getId(),
+    private final ItemWithBookingHistory.CommentDto commentDto1 = new ItemWithBookingHistory
+            .CommentDto(commentDto.getId(),
             commentDto.getText(), commentDto.getAuthorName(),
             commentDto.getCreated());
 

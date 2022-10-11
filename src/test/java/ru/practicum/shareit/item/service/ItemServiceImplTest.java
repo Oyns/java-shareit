@@ -9,6 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingState;
+import ru.practicum.shareit.exception.EntityNotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemWithBookingHistory;
@@ -27,9 +29,10 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static ru.practicum.shareit.booking.mapper.BookingMapper.toBooking;
-import static ru.practicum.shareit.item.mapper.ItemMapper.toComment;
-import static ru.practicum.shareit.item.mapper.ItemMapper.toItem;
+import static ru.practicum.shareit.item.mapper.ItemMapper.*;
 import static ru.practicum.shareit.user.mapper.UserMapper.toUserDto;
 
 @Transactional
@@ -43,14 +46,21 @@ public class ItemServiceImplTest {
 
     private User user;
 
+    private Item item;
 
     @BeforeEach
     void setUp() {
         user = new User();
         user.setName("Jack");
         user.setEmail("jjjjack@ya.ru");
-
         em.persist(user);
+
+        item = new Item();
+        item.setName("Вещь");
+        item.setDescription("Ценная вещь");
+        item.setOwner(user.getId());
+        item.setAvailable(true);
+        em.persist(item);
     }
 
     @AfterEach
@@ -64,11 +74,7 @@ public class ItemServiceImplTest {
 
     @Test
     void postItem() {
-        ItemDto itemDto = new ItemDto();
-        itemDto.setName("Saw");
-        itemDto.setDescription("Chain saw");
-        itemDto.setAvailable(true);
-        itemDto = itemService.postItem(user.getId(), itemDto);
+        ItemDto itemDto = itemService.postItem(user.getId(), toItemDto(item));
 
         TypedQuery<Item> query = em.createQuery("SELECT i FROM Item i WHERE i.id = :id", Item.class);
         Item item = query.setParameter("id", itemDto.getId()).getSingleResult();
@@ -82,13 +88,43 @@ public class ItemServiceImplTest {
     }
 
     @Test
+    void postItemWithoutStatus() {
+        item.setAvailable(null);
+
+        ValidationException thrown = assertThrows(ValidationException.class, () ->
+                itemService.postItem(user.getId(), toItemDto(item)));
+        assertEquals("Статус состояния отсутствует.", thrown.getMessage());
+    }
+
+    @Test
+    void postItemWithoutName() {
+        item.setName("");
+
+        ValidationException thrown = assertThrows(ValidationException.class, () ->
+                itemService.postItem(user.getId(), toItemDto(item)));
+        assertEquals("Отсутствует название предмета.", thrown.getMessage());
+    }
+
+    @Test
+    void postItemWithoutDescription() {
+        item.setDescription(null);
+
+        ValidationException thrown = assertThrows(ValidationException.class, () ->
+                itemService.postItem(user.getId(), toItemDto(item)));
+        assertEquals("Отсутствует описание предмета", thrown.getMessage());
+    }
+
+    @Test
+    void postItemFailedAvailable() {
+        item.setAvailable(false);
+
+        EntityNotFoundException thrown = assertThrows(EntityNotFoundException.class, () ->
+                itemService.postItem(user.getId(), toItemDto(item)));
+        assertEquals("Предмет занят.", thrown.getMessage());
+    }
+
+    @Test
     void postComment() {
-        Item item = new Item();
-        item.setName("Вещь");
-        item.setDescription("Ценная вещь");
-        item.setOwner(user.getId());
-        item.setAvailable(true);
-        em.persist(item);
         ItemDto itemDto1 = itemService.getItemById(item.getId());
 
         BookingDto bookingDto = new BookingDto();
@@ -115,13 +151,6 @@ public class ItemServiceImplTest {
 
     @Test
     void updateItemInfo() {
-        Item item = new Item();
-        item.setName("Вещь");
-        item.setDescription("Ценная вещь");
-        item.setOwner(user.getId());
-        item.setAvailable(true);
-        em.persist(item);
-
         ItemDto itemDto = new ItemDto();
         itemDto.setName("Saw");
         itemDto.setDescription("Chain saw");
@@ -137,12 +166,6 @@ public class ItemServiceImplTest {
 
     @Test
     void getItemByIdWithBookingHistory() {
-        Item item = new Item();
-        item.setName("item");
-        item.setDescription("important item");
-        item.setOwner(user.getId());
-        item.setAvailable(true);
-        em.persist(item);
         ItemDto itemDto = itemService.getItemById(item.getId());
 
         BookingDto lastBooking = new BookingDto();
@@ -194,12 +217,6 @@ public class ItemServiceImplTest {
 
     @Test
     void getAllItems() {
-        Item item = new Item();
-        item.setName("item");
-        item.setDescription("important item");
-        item.setOwner(user.getId());
-        item.setAvailable(true);
-        em.persist(item);
         ItemDto itemDto = itemService.getItemById(item.getId());
 
         BookingDto lastBooking = new BookingDto();
@@ -257,13 +274,7 @@ public class ItemServiceImplTest {
 
     @Test
     void searchForItemsResult() {
-        Item item = new Item();
-        item.setName("item");
         item.setDescription("important item");
-        item.setOwner(user.getId());
-        item.setAvailable(true);
-        em.persist(item);
-
         List<ItemDto> items = itemService.searchForItemsResult(user.getId(), "pOrt");
 
         assertThat(items, hasSize(1));
