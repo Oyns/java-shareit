@@ -4,7 +4,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.booking.dto.BookerDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.SimpleBookingDto;
 import ru.practicum.shareit.booking.model.Booking;
@@ -84,7 +83,7 @@ public class BookingServiceImpl implements BookingService {
                 .start(booking.getStart())
                 .end(booking.getEnd())
                 .status(BookingState.valueOf(approved))
-                .booker(new BookerDto(booking.getBooker()))
+                .booker(new BookingDto.BookerDto(booking.getBooker()))
                 .item(itemDto)
                 .build();
     }
@@ -104,7 +103,7 @@ public class BookingServiceImpl implements BookingService {
                 .start(booking.getStart())
                 .end(booking.getEnd())
                 .status(booking.getStatus())
-                .booker(new BookerDto(booking.getBooker()))
+                .booker(new BookingDto.BookerDto(booking.getBooker()))
                 .item(itemDto)
                 .build();
     }

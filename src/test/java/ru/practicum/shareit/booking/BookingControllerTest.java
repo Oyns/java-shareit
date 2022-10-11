@@ -8,7 +8,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.shareit.booking.dto.BookerDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.booking.service.BookingServiceImpl;
@@ -69,7 +68,7 @@ public class BookingControllerTest {
             .status(BookingState.APPROVED)
             .build();
 
-    private final BookerDto bookerDto = BookerDto.builder()
+    private final BookingDto.BookerDto bookerDto = BookingDto.BookerDto.builder()
             .id(bookingDto.getBooker().getId())
             .build();
 
