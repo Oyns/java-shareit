@@ -37,6 +37,8 @@ public class ItemRequestServiceImplTest {
 
     private User user;
 
+    private User user2;
+
     private Item item;
 
     private ItemRequest itemRequest;
@@ -47,6 +49,11 @@ public class ItemRequestServiceImplTest {
         user.setName("Воробушек");
         user.setEmail("chik@ya.ru");
         em.persist(user);
+
+        user2 = new User();
+        user2.setName("Крабик");
+        user2.setEmail("crab@ya.ru");
+        em.persist(user2);
 
         item = new Item();
         item.setName("Вещь");
@@ -115,7 +122,7 @@ public class ItemRequestServiceImplTest {
     void getRequests() {
         item.setRequest(itemRequest.getId());
         item.setOwner(user.getId());
-        List<RequestWithItemsDto> list = requestService.getRequests(user.getId(), 0, 1);
+        List<RequestWithItemsDto> list = requestService.getRequests(user2.getId(), 0, 1);
 
         RequestWithItemsDto requestWithItem = list.stream().findFirst().orElseThrow();
 
@@ -146,7 +153,7 @@ public class ItemRequestServiceImplTest {
     void getRequestsWithoutPagination() {
         item.setRequest(itemRequest.getId());
         item.setOwner(user.getId());
-        List<RequestWithItemsDto> list = requestService.getRequests(user.getId(), null, null);
+        List<RequestWithItemsDto> list = requestService.getRequests(user2.getId(), null, null);
 
         RequestWithItemsDto requestWithItem = list.stream().findFirst().orElseThrow();
 

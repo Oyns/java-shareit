@@ -76,34 +76,28 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         RequestWithItemsDto requestWithItemsDto;
         List<RequestWithItemsDto> requestWithItems = new ArrayList<>();
         if (from == null || size == null) {
-            List<ItemRequestDto> requests = itemRequestRepository.findAllByRequestor(userId).stream()
+            List<ItemRequestDto> requests = itemRequestRepository.findAll().stream()
+                    .filter(itemRequest -> !itemRequest.getRequestor().equals(userId))
                     .map(ItemRequestMapper::toItemRequestDto)
                     .collect(Collectors.toList());
             for (ItemRequestDto itemRequestDto : requests) {
-                List<ItemDto> itemDtos = itemRepository.findAllByRequest(itemRequestDto.getId()).stream()
+                List<ItemDto> itemDtos = itemRepository.findAll().stream()
                         .map(ItemMapper::toItemDto)
                         .collect(Collectors.toList());
-                if (itemDtos.isEmpty()) {
-                    return requestWithItems;
-                }
                 requestWithItemsDto = toRequestWithItemsDto(toItemRequest(itemRequestDto), itemDtos);
                 requestWithItems.add(requestWithItemsDto);
             }
-            return requestWithItems;
         } else {
             int page = from / size;
             PageRequest pageRequest = PageRequest.of(page, size, Sort.by("created"));
             List<ItemRequestDto> requests = itemRequestRepository.findAll(pageRequest).stream()
+                    .filter(itemRequest -> !itemRequest.getRequestor().equals(userId))
                     .map(ItemRequestMapper::toItemRequestDto)
                     .collect(Collectors.toList());
             for (ItemRequestDto itemRequestDto : requests) {
                 List<ItemDto> itemDtos = itemRepository.findAllByRequest(itemRequestDto.getId()).stream()
-                        .filter(item -> item.getOwner().equals(userId))
                         .map(ItemMapper::toItemDto)
                         .collect(Collectors.toList());
-                if (itemDtos.isEmpty()) {
-                    return requestWithItems;
-                }
                 requestWithItemsDto = toRequestWithItemsDto(toItemRequest(itemRequestDto), itemDtos);
                 requestWithItems.add(requestWithItemsDto);
             }
