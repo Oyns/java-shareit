@@ -150,7 +150,8 @@ public class ItemServiceImplTest {
         commentDto.setAuthorName(user.getName());
         commentDto.setCreated(LocalDate.now());
         itemService.postComment(user.getId(), itemDto1.getId(), toComment(commentDto));
-        TypedQuery<Comment> query = em.createQuery("SELECT c FROM Comment c WHERE c.text = :text", Comment.class);
+        TypedQuery<Comment> query
+                = em.createQuery("SELECT c FROM Comment c WHERE c.text = :text", Comment.class);
         Comment comment = query.setParameter("text", commentDto.getText()).getSingleResult();
 
         assertThat(comment.getId(), notNullValue());
