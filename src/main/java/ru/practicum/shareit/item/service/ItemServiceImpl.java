@@ -2,7 +2,7 @@ package ru.practicum.shareit.item.service;
 
 
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.booking.dto.BookingDto;
+import ru.practicum.shareit.booking.dto.SimpleBookingDto;
 import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exception.EntityNotFoundException;
@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static ru.practicum.shareit.booking.mapper.BookingMapper.toBookingDto;
+import static ru.practicum.shareit.booking.mapper.BookingMapper.toSimpleBookingDto;
 import static ru.practicum.shareit.item.mapper.ItemMapper.*;
 import static ru.practicum.shareit.utilities.Validator.validateItemDto;
 
@@ -90,8 +90,8 @@ public class ItemServiceImpl implements ItemService {
         ItemWithBookingHistory itemWithBookingHistory = new ItemWithBookingHistory();
         ItemDto itemDto = toItemDto(itemRepository.findById(itemId).orElseThrow());
         List<ItemWithBookingHistory.CommentDto> commentDtos = new ArrayList<>();
-        BookingDto lastBooking = new BookingDto();
-        BookingDto nextBooking = new BookingDto();
+        SimpleBookingDto lastBooking = new SimpleBookingDto();
+        SimpleBookingDto nextBooking = new SimpleBookingDto();
         if (commentRepository.findCommentByItemId(itemId) != null) {
             Comment comment = commentRepository.findCommentByItemId(itemId);
             CommentDto commentDto = toCommentDto(comment, itemDto, userServiceImpl.getUserById(comment.getAuthorId()));
@@ -104,8 +104,8 @@ public class ItemServiceImpl implements ItemService {
         }
         if (bookingRepository.findNextBooking(itemId, userId) != null
                 && bookingRepository.findLastBooking(itemId, userId) != null) {
-            lastBooking = toBookingDto(bookingRepository.findLastBooking(itemId, userId));
-            nextBooking = toBookingDto(bookingRepository.findNextBooking(itemId, userId));
+            lastBooking = toSimpleBookingDto(bookingRepository.findLastBooking(itemId, userId));
+            nextBooking = toSimpleBookingDto(bookingRepository.findNextBooking(itemId, userId));
         }
         if (!itemDto.getOwner().equals(userId)) {
             lastBooking = null;
@@ -119,16 +119,16 @@ public class ItemServiceImpl implements ItemService {
         ItemWithBookingHistory itemWithBookingHistory = new ItemWithBookingHistory();
         List<ItemWithBookingHistory.CommentDto> commentDtos = new ArrayList<>();
         List<ItemWithBookingHistory> itemDtos = new ArrayList<>();
-        BookingDto lastBooking = new BookingDto();
-        BookingDto nextBooking = new BookingDto();
+        SimpleBookingDto lastBooking = new SimpleBookingDto();
+        SimpleBookingDto nextBooking = new SimpleBookingDto();
         ItemDto itemDto;
         for (Item item : itemRepository.findAll()) {
             if (Objects.equals(item.getOwner(), userId)) {
                 itemDto = toItemDto(itemRepository.findById(item.getId()).orElseThrow());
                 if (bookingRepository.findNextBooking(item.getId(), userId) != null
                         && bookingRepository.findLastBooking(item.getId(), userId) != null) {
-                    lastBooking = toBookingDto(bookingRepository.findLastBooking(item.getId(), userId));
-                    nextBooking = toBookingDto(bookingRepository.findNextBooking(item.getId(), userId));
+                    lastBooking = toSimpleBookingDto(bookingRepository.findLastBooking(item.getId(), userId));
+                    nextBooking = toSimpleBookingDto(bookingRepository.findNextBooking(item.getId(), userId));
                 }
                 if (commentRepository.findCommentByItemId(item.getId()) != null) {
                     Comment comment = commentRepository.findCommentByItemId(item.getId());
@@ -144,7 +144,8 @@ public class ItemServiceImpl implements ItemService {
                 }
                 if (bookingRepository.findNextBooking(item.getId(), userId) != null
                         && bookingRepository.findLastBooking(item.getId(), userId) != null
-                        && Objects.requireNonNull(lastBooking).getStatus().equals(BookingState.APPROVED)) {
+                        && Objects.requireNonNull(bookingRepository.findBookingById(lastBooking.getId()))
+                        .getStatus().equals(BookingState.APPROVED)) {
                     itemDtos.add(toItemWithBookingHistory(itemDto, lastBooking, nextBooking, commentDtos));
                 } else {
                     itemDtos.add(toItemWithBookingHistory(itemDto, null, null, commentDtos));

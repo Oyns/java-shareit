@@ -26,7 +26,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static ru.practicum.shareit.booking.mapper.BookingMapper.toBookingDto;
+import static ru.practicum.shareit.booking.mapper.BookingMapper.toSimpleBookingDto;
 
 @Transactional
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
@@ -76,7 +76,7 @@ public class BookingServiceImplTest {
 
     @Test
     void createBooking() {
-        BookingDto bookingDto = bookingService.createBooking(user.getId(), toBookingDto(booking));
+        BookingDto bookingDto = bookingService.createBooking(user.getId(), toSimpleBookingDto(booking));
 
         TypedQuery<Booking> query = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
         Booking finalBooking = query.setParameter("id", bookingDto.getId()).getSingleResult();
@@ -84,8 +84,8 @@ public class BookingServiceImplTest {
         assertThat(finalBooking.getId(), equalTo(bookingDto.getId()));
         assertThat(finalBooking.getEnd(), equalTo(bookingDto.getEnd()));
         assertThat(finalBooking.getStart(), equalTo(bookingDto.getStart()));
-        assertThat(finalBooking.getItemId(), equalTo(bookingDto.getItemId()));
-        assertThat(finalBooking.getBooker(), equalTo(bookingDto.getBookerId()));
+        assertThat(finalBooking.getItemId(), equalTo(bookingDto.getItem().getId()));
+        assertThat(finalBooking.getBooker(), equalTo(bookingDto.getBooker().getId()));
         assertThat(finalBooking.getStatus(), equalTo(bookingDto.getStatus()));
     }
 
@@ -93,7 +93,7 @@ public class BookingServiceImplTest {
     void createBookingFailedOwnerBooking() {
         item.setOwner(user.getId());
         EntityNotFoundException thrown = assertThrows(EntityNotFoundException.class, () ->
-                bookingService.createBooking(user.getId(), toBookingDto(booking)));
+                bookingService.createBooking(user.getId(), toSimpleBookingDto(booking)));
 
         assertEquals("Владелец не может бронировать предмет.", thrown.getMessage());
     }
@@ -102,7 +102,7 @@ public class BookingServiceImplTest {
     void createBookingFailedAvailable() {
         item.setAvailable(false);
         ValidationException thrown = assertThrows(ValidationException.class, () ->
-                bookingService.createBooking(user.getId(), toBookingDto(booking)));
+                bookingService.createBooking(user.getId(), toSimpleBookingDto(booking)));
 
         assertEquals("Предмет занят другим пользователем.", thrown.getMessage());
     }
@@ -111,7 +111,7 @@ public class BookingServiceImplTest {
     void createBookingFailedTiming() {
         booking.setEnd(LocalDateTime.now().minusYears(5));
         ValidationException thrown = assertThrows(ValidationException.class, () ->
-                bookingService.createBooking(user.getId(), toBookingDto(booking)));
+                bookingService.createBooking(user.getId(), toSimpleBookingDto(booking)));
 
         assertEquals("Некорректная дата бронирования", thrown.getMessage());
     }

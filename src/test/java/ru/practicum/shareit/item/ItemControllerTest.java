@@ -29,6 +29,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static ru.practicum.shareit.booking.mapper.BookingMapper.toBooking;
+import static ru.practicum.shareit.booking.mapper.BookingMapper.toSimpleBookingDto;
 
 @WebMvcTest(controllers = ItemController.class)
 @AutoConfigureMockMvc
@@ -71,8 +73,8 @@ public class ItemControllerTest {
             .id(1L)
             .start(LocalDateTime.of(2022, 10, 11, 17, 5))
             .end(LocalDateTime.of(2022, 10, 11, 17, 7))
-            .itemId(1L)
-            .bookerId(1L)
+            .item(new BookingDto.ItemDto(itemDto.getId(), itemDto.getName()))
+            .booker(new BookingDto.BookerDto(userDto.getId()))
             .status(BookingState.APPROVED)
             .build();
 
@@ -80,8 +82,8 @@ public class ItemControllerTest {
             .id(2L)
             .start(LocalDateTime.of(2022, 11, 11, 17, 5))
             .end(LocalDateTime.of(2022, 12, 11, 17, 5))
-            .itemId(2L)
-            .bookerId(1L)
+            .item(new BookingDto.ItemDto(2L, "Стул"))
+            .booker(new BookingDto.BookerDto(userDto.getId()))
             .status(BookingState.APPROVED)
             .build();
 
@@ -98,8 +100,8 @@ public class ItemControllerTest {
             .description(itemDto.getDescription())
             .available(itemDto.getAvailable())
             .comments(commentDtos)
-            .lastBooking(lastBooking)
-            .nextBooking(nextBooking)
+            .lastBooking(toSimpleBookingDto(toBooking(lastBooking)))
+            .nextBooking(toSimpleBookingDto(toBooking(nextBooking)))
             .build();
 
 
@@ -179,13 +181,11 @@ public class ItemControllerTest {
                 .andExpect(jsonPath("$.lastBooking[?(@.end == '2022-10-11T17:07:00')]").exists())
                 .andExpect(jsonPath("$.lastBooking[?(@.itemId == 1)]").exists())
                 .andExpect(jsonPath("$.lastBooking[?(@.bookerId == 1)]").exists())
-                .andExpect(jsonPath("$.lastBooking[?(@.status == 'APPROVED')]").exists())
                 .andExpect(jsonPath("$.nextBooking[?(@.id == 2)]").exists())
                 .andExpect(jsonPath("$.nextBooking[?(@.start == '2022-11-11T17:05:00')]").exists())
                 .andExpect(jsonPath("$.nextBooking[?(@.end == '2022-12-11T17:05:00')]").exists())
                 .andExpect(jsonPath("$.nextBooking[?(@.itemId == 2)]").exists())
-                .andExpect(jsonPath("$.nextBooking[?(@.bookerId == 1)]").exists())
-                .andExpect(jsonPath("$.nextBooking[?(@.status == 'APPROVED')]").exists());
+                .andExpect(jsonPath("$.nextBooking[?(@.bookerId == 1)]").exists());
     }
 
     @Test
@@ -210,13 +210,11 @@ public class ItemControllerTest {
                 .andExpect(jsonPath("$[0].lastBooking[?(@.end == '2022-10-11T17:07:00')]").exists())
                 .andExpect(jsonPath("$[0].lastBooking[?(@.itemId == 1)]").exists())
                 .andExpect(jsonPath("$[0].lastBooking[?(@.bookerId == 1)]").exists())
-                .andExpect(jsonPath("$[0].lastBooking[?(@.status == 'APPROVED')]").exists())
                 .andExpect(jsonPath("$[0].nextBooking[?(@.id == 2)]").exists())
                 .andExpect(jsonPath("$[0].nextBooking[?(@.start == '2022-11-11T17:05:00')]").exists())
                 .andExpect(jsonPath("$[0].nextBooking[?(@.end == '2022-12-11T17:05:00')]").exists())
                 .andExpect(jsonPath("$[0].nextBooking[?(@.itemId == 2)]").exists())
-                .andExpect(jsonPath("$[0].nextBooking[?(@.bookerId == 1)]").exists())
-                .andExpect(jsonPath("$[0].nextBooking[?(@.status == 'APPROVED')]").exists());
+                .andExpect(jsonPath("$[0].nextBooking[?(@.bookerId == 1)]").exists());
     }
 
     @Test

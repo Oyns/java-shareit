@@ -17,7 +17,7 @@ public class ItemWithBookingHistoryTest {
     private JacksonTester<ItemWithBookingHistory.CommentDto> json;
 
     @Test
-    void testSerialisation() throws Exception {
+    void serializeTest() throws Exception {
         ItemWithBookingHistory.CommentDto withBookingHistory = new ItemWithBookingHistory
                 .CommentDto(1L, "текст", "Егор", LocalDate.of(2022, 10, 10));
 

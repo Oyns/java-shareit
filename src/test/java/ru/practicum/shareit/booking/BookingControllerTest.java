@@ -44,16 +44,6 @@ public class BookingControllerTest {
 
     private final DateTimeFormatter formatters = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
-    private final BookingDto bookingDto = BookingDto.builder()
-            .id(1L)
-            .start(LocalDateTime.parse(LocalDateTime.of(2022, 10, 11, 17, 5)
-                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))))
-            .end(LocalDateTime.parse(LocalDateTime.of(2022, 10, 11, 17, 7)
-                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))))
-            .itemId(1L)
-            .bookerId(1L)
-            .status(BookingState.APPROVED)
-            .build();
 
     private final ItemDto itemDto = ItemDto.builder()
             .id(1L)
@@ -68,9 +58,19 @@ public class BookingControllerTest {
             .name("Евгений")
             .email("eugen@mailbox.com")
             .build();
+    private final BookingDto bookingDto = BookingDto.builder()
+            .id(1L)
+            .start(LocalDateTime.parse(LocalDateTime.of(2022, 10, 11, 17, 5)
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))))
+            .end(LocalDateTime.parse(LocalDateTime.of(2022, 10, 11, 17, 7)
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))))
+            .item(new BookingDto.ItemDto(itemDto.getId(), itemDto.getName()))
+            .booker(new BookingDto.BookerDto(userDto.getId()))
+            .status(BookingState.APPROVED)
+            .build();
 
     private final BookerDto bookerDto = BookerDto.builder()
-            .id(bookingDto.getBookerId())
+            .id(bookingDto.getBooker().getId())
             .build();
 
     private final ItemWithBookingDto itemWithBookingDto = ItemWithBookingDto.builder()
@@ -95,8 +95,9 @@ public class BookingControllerTest {
                 .andExpect(jsonPath("$.id", is(bookingDto.getId()), Long.class))
                 .andExpect(jsonPath("$.start", is(bookingDto.getStart().format(formatters))))
                 .andExpect(jsonPath("$.end", is(bookingDto.getEnd().format(formatters))))
-                .andExpect(jsonPath("$.itemId", is(bookingDto.getItemId()), Long.class))
-                .andExpect(jsonPath("$.bookerId", is(bookingDto.getBookerId()), Long.class))
+                .andExpect(jsonPath("$.item[?(@.id == 1)]").exists())
+                .andExpect(jsonPath("$.item[?(@.name == 'Пила')]").exists())
+                .andExpect(jsonPath("$.booker[?(@.id == 1)]").exists())
                 .andExpect(jsonPath("$.status", is(bookingDto.getStatus().toString())));
     }
 

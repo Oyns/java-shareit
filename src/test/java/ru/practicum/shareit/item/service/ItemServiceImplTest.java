@@ -32,6 +32,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static ru.practicum.shareit.booking.mapper.BookingMapper.toBooking;
+import static ru.practicum.shareit.booking.mapper.BookingMapper.toSimpleBookingDto;
 import static ru.practicum.shareit.item.mapper.ItemMapper.*;
 import static ru.practicum.shareit.user.mapper.UserMapper.toUserDto;
 
@@ -138,8 +139,8 @@ public class ItemServiceImplTest {
         BookingDto bookingDto = new BookingDto();
         bookingDto.setEnd(LocalDateTime.now().minusDays(1));
         bookingDto.setStart(LocalDateTime.now().minusDays(2));
-        bookingDto.setItemId(itemDto1.getId());
-        bookingDto.setBookerId(user.getId());
+        bookingDto.setItem(new BookingDto.ItemDto(itemDto1.getId(), itemDto1.getName()));
+        bookingDto.setBooker(new BookingDto.BookerDto(user.getId()));
         bookingDto.setStatus(BookingState.APPROVED);
         em.persist(toBooking(bookingDto));
 
@@ -205,8 +206,8 @@ public class ItemServiceImplTest {
         BookingDto lastBooking = new BookingDto();
         lastBooking.setEnd(LocalDateTime.now().minusDays(1));
         lastBooking.setStart(LocalDateTime.now().minusDays(2));
-        lastBooking.setItemId(itemDto.getId());
-        lastBooking.setBookerId(user.getId());
+        lastBooking.setItem(new BookingDto.ItemDto(itemDto.getId(), itemDto.getName()));
+        lastBooking.setBooker(new BookingDto.BookerDto(user.getId()));
         lastBooking.setStatus(BookingState.APPROVED);
         Booking booking1 = toBooking(lastBooking);
         em.persist(booking1);
@@ -214,8 +215,8 @@ public class ItemServiceImplTest {
         BookingDto nextBooking = new BookingDto();
         nextBooking.setEnd(LocalDateTime.now());
         nextBooking.setStart(LocalDateTime.now().plusDays(2));
-        nextBooking.setItemId(itemDto.getId());
-        nextBooking.setBookerId(user.getId());
+        nextBooking.setItem(new BookingDto.ItemDto(itemDto.getId(), itemDto.getName()));
+        nextBooking.setBooker(new BookingDto.BookerDto(user.getId()));
         nextBooking.setStatus(BookingState.APPROVED);
         em.persist(toBooking(nextBooking));
 
@@ -239,7 +240,7 @@ public class ItemServiceImplTest {
 
         assertThat(itemWithBookings.getName(), equalTo(item1.getName()));
         assertThat(itemWithBookings.getDescription(), equalTo(item1.getDescription()));
-        assertThat(toBooking(itemWithBookings.getLastBooking()), equalTo(booking));
+        assertThat(itemWithBookings.getLastBooking(), equalTo(toSimpleBookingDto(booking)));
         ItemWithBookingHistory.CommentDto commentDto = itemWithBookings.getComments().stream()
                 .filter(commentDto1 -> commentDto1.getId().equals(comment.getId()))
                 .findFirst()
@@ -256,8 +257,8 @@ public class ItemServiceImplTest {
         BookingDto lastBooking = new BookingDto();
         lastBooking.setEnd(LocalDateTime.now().minusDays(1));
         lastBooking.setStart(LocalDateTime.now().minusDays(2));
-        lastBooking.setItemId(itemDto.getId());
-        lastBooking.setBookerId(user.getId());
+        lastBooking.setItem(new BookingDto.ItemDto(itemDto.getId(), itemDto.getName()));
+        lastBooking.setBooker(new BookingDto.BookerDto(user.getId()));
         lastBooking.setStatus(BookingState.APPROVED);
         Booking booking1 = toBooking(lastBooking);
         em.persist(booking1);
@@ -265,8 +266,8 @@ public class ItemServiceImplTest {
         BookingDto nextBooking = new BookingDto();
         nextBooking.setEnd(LocalDateTime.now());
         nextBooking.setStart(LocalDateTime.now().plusDays(2));
-        nextBooking.setItemId(itemDto.getId());
-        nextBooking.setBookerId(user.getId());
+        nextBooking.setItem(new BookingDto.ItemDto(itemDto.getId(), itemDto.getName()));
+        nextBooking.setBooker(new BookingDto.BookerDto(user.getId()));
         nextBooking.setStatus(BookingState.APPROVED);
         em.persist(toBooking(nextBooking));
 
@@ -281,7 +282,7 @@ public class ItemServiceImplTest {
 
         assertThat(itemWithBookings.getName(), equalTo(item1.getName()));
         assertThat(itemWithBookings.getDescription(), equalTo(item1.getDescription()));
-        assertThat(toBooking(itemWithBookings.getLastBooking()), equalTo(booking));
+        assertThat(itemWithBookings.getLastBooking(), equalTo(toSimpleBookingDto(booking)));
     }
 
     @Test
@@ -291,8 +292,8 @@ public class ItemServiceImplTest {
         BookingDto lastBooking = new BookingDto();
         lastBooking.setEnd(LocalDateTime.now().minusDays(1));
         lastBooking.setStart(LocalDateTime.now().minusDays(2));
-        lastBooking.setItemId(itemDto.getId());
-        lastBooking.setBookerId(user.getId());
+        lastBooking.setItem(new BookingDto.ItemDto(itemDto.getId(), itemDto.getName()));
+        lastBooking.setBooker(new BookingDto.BookerDto(user.getId()));
         lastBooking.setStatus(BookingState.APPROVED);
         Booking booking1 = toBooking(lastBooking);
         em.persist(booking1);
@@ -300,8 +301,8 @@ public class ItemServiceImplTest {
         BookingDto nextBooking = new BookingDto();
         nextBooking.setEnd(LocalDateTime.now());
         nextBooking.setStart(LocalDateTime.now().plusDays(2));
-        nextBooking.setItemId(itemDto.getId());
-        nextBooking.setBookerId(user.getId());
+        nextBooking.setItem(new BookingDto.ItemDto(itemDto.getId(), itemDto.getName()));
+        nextBooking.setBooker(new BookingDto.BookerDto(user.getId()));
         nextBooking.setStatus(BookingState.APPROVED);
         em.persist(toBooking(nextBooking));
 
@@ -331,7 +332,7 @@ public class ItemServiceImplTest {
         assertThat(itemsWithBookings, hasSize(1));
         assertThat(itemWithBookings.getName(), equalTo(item1.getName()));
         assertThat(itemWithBookings.getDescription(), equalTo(item1.getDescription()));
-        assertThat(toBooking(itemWithBookings.getLastBooking()), equalTo(booking));
+        assertThat(itemWithBookings.getLastBooking(), equalTo(toSimpleBookingDto(booking)));
         ItemWithBookingHistory.CommentDto commentDto = itemWithBookings.getComments().stream()
                 .filter(commentDto1 -> commentDto1.getId().equals(comment.getId()))
                 .findFirst()

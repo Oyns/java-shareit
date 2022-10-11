@@ -2,7 +2,7 @@ package ru.practicum.shareit.item.mapper;
 
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.booking.dto.BookerDto;
-import ru.practicum.shareit.booking.dto.BookingDto;
+import ru.practicum.shareit.booking.dto.SimpleBookingDto;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -72,8 +72,8 @@ public class ItemMapper {
     }
 
     public static ItemWithBookingHistory toItemWithBookingHistory(ItemDto itemDto,
-                                                                  BookingDto lastBooking,
-                                                                  BookingDto nextBooking,
+                                                                  SimpleBookingDto lastBooking,
+                                                                  SimpleBookingDto nextBooking,
                                                                   List<ItemWithBookingHistory.CommentDto> commentDtos) {
         return ItemWithBookingHistory.builder()
                 .id(itemDto.getId())

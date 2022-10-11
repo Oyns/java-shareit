@@ -1,7 +1,7 @@
 package ru.practicum.shareit.item.dto;
 
 import lombok.*;
-import ru.practicum.shareit.booking.dto.BookingDto;
+import ru.practicum.shareit.booking.dto.SimpleBookingDto;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -17,8 +17,8 @@ public class ItemWithBookingHistory {
     private String name;
     private String description;
     private Boolean available;
-    private BookingDto lastBooking;
-    private BookingDto nextBooking;
+    private SimpleBookingDto lastBooking;
+    private SimpleBookingDto nextBooking;
     private List<CommentDto> comments;
 
     @AllArgsConstructor
