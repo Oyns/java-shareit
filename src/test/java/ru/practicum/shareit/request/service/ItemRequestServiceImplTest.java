@@ -36,19 +36,27 @@ public class ItemRequestServiceImplTest {
 
     private Item item;
 
+    private ItemRequest itemRequest;
+
     @BeforeEach
     void setUp() {
+        user = new User();
+        user.setName("Воробушек");
+        user.setEmail("chik@ya.ru");
+        em.persist(user);
+
         item = new Item();
         item.setName("Вещь");
         item.setDescription("Важная вещь");
         item.setAvailable(true);
-
-        user = new User();
-        user.setName("Воробушек");
-        user.setEmail("chik@ya.ru");
-
-        em.persist(user);
         em.persist(item);
+
+        itemRequest = new ItemRequest();
+        itemRequest.setRequestor(user.getId());
+        itemRequest.setDescription("Птичку жалко");
+        itemRequest.setCreated(LocalDateTime.now());
+
+        em.persist(itemRequest);
     }
 
     @AfterEach
@@ -62,11 +70,6 @@ public class ItemRequestServiceImplTest {
 
     @Test
     void postItemRequest() {
-        ItemRequest itemRequest = new ItemRequest();
-        itemRequest.setRequestor(user.getId());
-        itemRequest.setDescription("Птичку жалко");
-        itemRequest.setCreated(LocalDateTime.now());
-
         ItemRequestDto itemRequestDto = requestService.postItemRequest(user.getId(), toItemRequestDto(itemRequest));
 
         TypedQuery<ItemRequest> query = em
@@ -85,14 +88,6 @@ public class ItemRequestServiceImplTest {
         item1.setName("Вещь");
         item1.setDescription("Важная вещь");
         item1.setAvailable(true);
-
-        ItemRequest itemRequest = new ItemRequest();
-        itemRequest.setRequestor(user.getId());
-        itemRequest.setDescription("Птичку жалко");
-        itemRequest.setCreated(LocalDateTime.now());
-
-        em.persist(itemRequest);
-
         item1.setRequest(1L);
         em.persist(item1);
         List<RequestWithItemsDto> list = requestService.getSelfRequests(user.getId());
@@ -115,13 +110,6 @@ public class ItemRequestServiceImplTest {
 
     @Test
     void getRequests() {
-        ItemRequest itemRequest = new ItemRequest();
-        itemRequest.setRequestor(user.getId());
-        itemRequest.setDescription("Птичку жалко");
-        itemRequest.setCreated(LocalDateTime.now());
-
-        em.persist(itemRequest);
-
         item.setRequest(itemRequest.getId());
         item.setOwner(user.getId());
         List<RequestWithItemsDto> list = requestService.getRequests(user.getId(), 0, 1);
@@ -143,14 +131,29 @@ public class ItemRequestServiceImplTest {
     }
 
     @Test
+    void getRequestsWithoutPagination() {
+        item.setRequest(itemRequest.getId());
+        item.setOwner(user.getId());
+        List<RequestWithItemsDto> list = requestService.getRequests(user.getId(), null, null);
+
+        RequestWithItemsDto requestWithItem = list.stream().findFirst().orElseThrow();
+
+        TypedQuery<ItemRequest> query = em
+                .createQuery("SELECT r FROM ItemRequest r WHERE r.id = :id", ItemRequest.class);
+        ItemRequest request = query.setParameter("id", requestWithItem.getId()).getSingleResult();
+
+        TypedQuery<Item> query1 = em.createQuery("SELECT i FROM Item i WHERE i.id = :id", Item.class);
+        Item item1 = query1.setParameter("id", item.getId()).getSingleResult();
+
+        assertThat(requestWithItem.getId(), equalTo(request.getId()));
+        assertThat(toItem(requestWithItem.getItems().get(0)), equalTo(item1));
+        assertThat(requestWithItem.getDescription(), equalTo(request.getDescription()));
+        assertThat(requestWithItem.getCreated(), equalTo(request.getCreated()));
+        assertThat(requestWithItem.getRequestorId(), equalTo(request.getRequestor()));
+    }
+
+    @Test
     void getRequestById() {
-        ItemRequest itemRequest = new ItemRequest();
-        itemRequest.setRequestor(user.getId());
-        itemRequest.setDescription("Птичку жалко");
-        itemRequest.setCreated(LocalDateTime.now());
-
-        em.persist(itemRequest);
-
         item.setRequest(itemRequest.getId());
 
         RequestWithItemsDto requestWithItem = requestService.getRequestById(user.getId(), itemRequest.getId());

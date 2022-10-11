@@ -37,19 +37,28 @@ public class BookingServiceImplTest {
 
     private Item item;
 
+    private Booking booking;
+
     @BeforeEach
     void setUp() {
         user = new User();
         user.setName("Jack");
         user.setEmail("jjjjack@ya.ru");
+        em.persist(user);
 
         item = new Item();
         item.setName("Вещь");
         item.setDescription("Важная вещь");
         item.setAvailable(true);
-
-        em.persist(user);
         em.persist(item);
+
+        booking = new Booking();
+        booking.setEnd(LocalDateTime.now().plusDays(2));
+        booking.setStart(LocalDateTime.now().plusMinutes(1));
+        booking.setItemId(item.getId());
+        booking.setStatus(BookingState.APPROVED);
+        booking.setBooker(user.getId());
+        em.persist(booking);
     }
 
     @AfterEach
@@ -63,13 +72,6 @@ public class BookingServiceImplTest {
 
     @Test
     void createBooking() {
-        Booking booking = new Booking();
-        booking.setEnd(LocalDateTime.now().plusDays(2));
-        booking.setStart(LocalDateTime.now().plusMinutes(1));
-        booking.setItemId(item.getId());
-        booking.setStatus(BookingState.APPROVED);
-        booking.setBooker(user.getId());
-
         BookingDto bookingDto = bookingService.createBooking(user.getId(), toBookingDto(booking));
 
         TypedQuery<Booking> query = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
@@ -85,12 +87,7 @@ public class BookingServiceImplTest {
 
     @Test
     void updateBooking() {
-        Booking booking = new Booking();
-        booking.setEnd(LocalDateTime.now().plusDays(2));
-        booking.setStart(LocalDateTime.now().plusMinutes(1));
-        booking.setItemId(item.getId());
         booking.setStatus(BookingState.REJECTED);
-        booking.setBooker(user.getId());
         item.setOwner(user.getId());
 
         em.persist(booking);
@@ -107,15 +104,7 @@ public class BookingServiceImplTest {
 
     @Test
     void getBookingById() {
-        Booking booking = new Booking();
-        booking.setEnd(LocalDateTime.now().plusDays(2));
-        booking.setStart(LocalDateTime.now().plusMinutes(1));
-        booking.setItemId(item.getId());
-        booking.setStatus(BookingState.REJECTED);
-        booking.setBooker(user.getId());
         item.setOwner(user.getId());
-
-        em.persist(booking);
 
         ItemWithBookingDto withBookingDto = bookingService.getBookingById(user.getId(), booking.getId());
 
@@ -130,16 +119,8 @@ public class BookingServiceImplTest {
     }
 
     @Test
-    void getAllBookingsByUserId() {
-        Booking booking = new Booking();
-        booking.setEnd(LocalDateTime.now().plusDays(2));
-        booking.setStart(LocalDateTime.now().plusMinutes(1));
-        booking.setItemId(item.getId());
-        booking.setStatus(BookingState.REJECTED);
-        booking.setBooker(user.getId());
+    void getAllBookingsByUserIdStateAll() {
         item.setOwner(user.getId());
-
-        em.persist(booking);
 
         List<ItemWithBookingDto> withBookingDtos = bookingService
                 .getAllBookingsByUserId(user.getId(), "ALL", 0, 1);
@@ -159,19 +140,237 @@ public class BookingServiceImplTest {
     }
 
     @Test
-    void getAllBookingsForOwner() {
-        Booking booking = new Booking();
-        booking.setEnd(LocalDateTime.now().plusDays(2));
-        booking.setStart(LocalDateTime.now().plusMinutes(1));
-        booking.setItemId(item.getId());
-        booking.setStatus(BookingState.REJECTED);
-        booking.setBooker(user.getId());
+    void getAllBookingsByUserIdStateCurrent() {
+        booking.setStart(LocalDateTime.now().minusMinutes(1));
+        booking.setEnd(LocalDateTime.now().plusMinutes(1));
         item.setOwner(user.getId());
 
-        em.persist(booking);
+        List<ItemWithBookingDto> withBookingDtos = bookingService
+                .getAllBookingsByUserId(user.getId(), "CURRENT", 0, 1);
+
+        ItemWithBookingDto withBookingDto = withBookingDtos.stream()
+                .findFirst()
+                .orElseThrow();
+
+        TypedQuery<Booking> query = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
+        Booking finalBooking = query.setParameter("id", withBookingDto.getId()).getSingleResult();
+
+        assertThat(withBookingDto.getId(), notNullValue());
+        assertThat(withBookingDto.getBooker().getId(), equalTo(finalBooking.getBooker()));
+        assertThat(withBookingDto.getStart(), equalTo(finalBooking.getStart()));
+        assertThat(withBookingDto.getEnd(), equalTo(finalBooking.getEnd()));
+        assertThat(withBookingDto.getStatus(), equalTo(finalBooking.getStatus()));
+    }
+
+    @Test
+    void getAllBookingsByUserIdStatePast() {
+        booking.setEnd(LocalDateTime.now().minusMinutes(2));
+        booking.setStart(LocalDateTime.now().minusDays(1));
+        item.setOwner(user.getId());
+
+        List<ItemWithBookingDto> withBookingDtos = bookingService
+                .getAllBookingsByUserId(user.getId(), "PAST", 0, 1);
+
+        ItemWithBookingDto withBookingDto = withBookingDtos.stream()
+                .findFirst()
+                .orElseThrow();
+
+        TypedQuery<Booking> query = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
+        Booking finalBooking = query.setParameter("id", withBookingDto.getId()).getSingleResult();
+
+        assertThat(withBookingDto.getId(), notNullValue());
+        assertThat(withBookingDto.getBooker().getId(), equalTo(finalBooking.getBooker()));
+        assertThat(withBookingDto.getStart(), equalTo(finalBooking.getStart()));
+        assertThat(withBookingDto.getEnd(), equalTo(finalBooking.getEnd()));
+        assertThat(withBookingDto.getStatus(), equalTo(finalBooking.getStatus()));
+    }
+
+    @Test
+    void getAllBookingsByUserIdStateFuture() {
+        booking.setEnd(LocalDateTime.now().plusDays(2));
+        booking.setStart(LocalDateTime.now().plusDays(1));
+        item.setOwner(user.getId());
+
+        List<ItemWithBookingDto> withBookingDtos = bookingService
+                .getAllBookingsByUserId(user.getId(), "FUTURE", 0, 1);
+
+        ItemWithBookingDto withBookingDto = withBookingDtos.stream()
+                .findFirst()
+                .orElseThrow();
+
+        TypedQuery<Booking> query = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
+        Booking finalBooking = query.setParameter("id", withBookingDto.getId()).getSingleResult();
+
+        assertThat(withBookingDto.getId(), notNullValue());
+        assertThat(withBookingDto.getBooker().getId(), equalTo(finalBooking.getBooker()));
+        assertThat(withBookingDto.getStart(), equalTo(finalBooking.getStart()));
+        assertThat(withBookingDto.getEnd(), equalTo(finalBooking.getEnd()));
+        assertThat(withBookingDto.getStatus(), equalTo(finalBooking.getStatus()));
+    }
+
+    @Test
+    void getAllBookingsByUserIdStateRejected() {
+        booking.setStatus(BookingState.REJECTED);
+        item.setOwner(user.getId());
+
+        List<ItemWithBookingDto> withBookingDtos = bookingService
+                .getAllBookingsByUserId(user.getId(), "REJECTED", 0, 1);
+
+        ItemWithBookingDto withBookingDto = withBookingDtos.stream()
+                .findFirst()
+                .orElseThrow();
+
+        TypedQuery<Booking> query = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
+        Booking finalBooking = query.setParameter("id", withBookingDto.getId()).getSingleResult();
+
+        assertThat(withBookingDto.getId(), notNullValue());
+        assertThat(withBookingDto.getBooker().getId(), equalTo(finalBooking.getBooker()));
+        assertThat(withBookingDto.getStart(), equalTo(finalBooking.getStart()));
+        assertThat(withBookingDto.getEnd(), equalTo(finalBooking.getEnd()));
+        assertThat(withBookingDto.getStatus(), equalTo(finalBooking.getStatus()));
+    }
+
+    @Test
+    void getAllBookingsByUserIdStateWaiting() {
+        booking.setStatus(BookingState.WAITING);
+        item.setOwner(user.getId());
+
+        List<ItemWithBookingDto> withBookingDtos = bookingService
+                .getAllBookingsByUserId(user.getId(), "WAITING", 0, 1);
+
+        ItemWithBookingDto withBookingDto = withBookingDtos.stream()
+                .findFirst()
+                .orElseThrow();
+
+        TypedQuery<Booking> query = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
+        Booking finalBooking = query.setParameter("id", withBookingDto.getId()).getSingleResult();
+
+        assertThat(withBookingDto.getId(), notNullValue());
+        assertThat(withBookingDto.getBooker().getId(), equalTo(finalBooking.getBooker()));
+        assertThat(withBookingDto.getStart(), equalTo(finalBooking.getStart()));
+        assertThat(withBookingDto.getEnd(), equalTo(finalBooking.getEnd()));
+        assertThat(withBookingDto.getStatus(), equalTo(finalBooking.getStatus()));
+    }
+
+    @Test
+    void getAllBookingsForOwnerStateAll() {
+        item.setOwner(user.getId());
 
         List<ItemWithBookingDto> withBookingDtos = bookingService
                 .getAllBookingsForOwner(user.getId(), "ALL", 0, 1);
+
+        ItemWithBookingDto withBookingDto = withBookingDtos.stream()
+                .findFirst()
+                .orElseThrow();
+
+        TypedQuery<Booking> query = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
+        Booking finalBooking = query.setParameter("id", withBookingDto.getId()).getSingleResult();
+
+        assertThat(withBookingDto.getId(), notNullValue());
+        assertThat(withBookingDto.getBooker().getId(), equalTo(finalBooking.getBooker()));
+        assertThat(withBookingDto.getStart(), equalTo(finalBooking.getStart()));
+        assertThat(withBookingDto.getEnd(), equalTo(finalBooking.getEnd()));
+        assertThat(withBookingDto.getStatus(), equalTo(finalBooking.getStatus()));
+    }
+
+    @Test
+    void getAllBookingsForOwnerStateCurrent() {
+        booking.setStart(LocalDateTime.now().minusMinutes(1));
+        booking.setEnd(LocalDateTime.now().plusMinutes(1));
+        item.setOwner(user.getId());
+
+        List<ItemWithBookingDto> withBookingDtos = bookingService
+                .getAllBookingsForOwner(user.getId(), "CURRENT", 0, 1);
+
+        ItemWithBookingDto withBookingDto = withBookingDtos.stream()
+                .findFirst()
+                .orElseThrow();
+
+        TypedQuery<Booking> query = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
+        Booking finalBooking = query.setParameter("id", withBookingDto.getId()).getSingleResult();
+
+        assertThat(withBookingDto.getId(), notNullValue());
+        assertThat(withBookingDto.getBooker().getId(), equalTo(finalBooking.getBooker()));
+        assertThat(withBookingDto.getStart(), equalTo(finalBooking.getStart()));
+        assertThat(withBookingDto.getEnd(), equalTo(finalBooking.getEnd()));
+        assertThat(withBookingDto.getStatus(), equalTo(finalBooking.getStatus()));
+    }
+
+    @Test
+    void getAllBookingsForOwnerStatePast() {
+        booking.setEnd(LocalDateTime.now().minusMinutes(2));
+        booking.setStart(LocalDateTime.now().minusDays(1));
+        item.setOwner(user.getId());
+
+        List<ItemWithBookingDto> withBookingDtos = bookingService
+                .getAllBookingsForOwner(user.getId(), "PAST", 0, 1);
+
+        ItemWithBookingDto withBookingDto = withBookingDtos.stream()
+                .findFirst()
+                .orElseThrow();
+
+        TypedQuery<Booking> query = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
+        Booking finalBooking = query.setParameter("id", withBookingDto.getId()).getSingleResult();
+
+        assertThat(withBookingDto.getId(), notNullValue());
+        assertThat(withBookingDto.getBooker().getId(), equalTo(finalBooking.getBooker()));
+        assertThat(withBookingDto.getStart(), equalTo(finalBooking.getStart()));
+        assertThat(withBookingDto.getEnd(), equalTo(finalBooking.getEnd()));
+        assertThat(withBookingDto.getStatus(), equalTo(finalBooking.getStatus()));
+    }
+
+    @Test
+    void getAllBookingsForOwnerStateFuture() {
+        booking.setEnd(LocalDateTime.now().plusDays(2));
+        booking.setStart(LocalDateTime.now().plusDays(1));
+        item.setOwner(user.getId());
+
+        List<ItemWithBookingDto> withBookingDtos = bookingService
+                .getAllBookingsForOwner(user.getId(), "FUTURE", 0, 1);
+
+        ItemWithBookingDto withBookingDto = withBookingDtos.stream()
+                .findFirst()
+                .orElseThrow();
+
+        TypedQuery<Booking> query = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
+        Booking finalBooking = query.setParameter("id", withBookingDto.getId()).getSingleResult();
+
+        assertThat(withBookingDto.getId(), notNullValue());
+        assertThat(withBookingDto.getBooker().getId(), equalTo(finalBooking.getBooker()));
+        assertThat(withBookingDto.getStart(), equalTo(finalBooking.getStart()));
+        assertThat(withBookingDto.getEnd(), equalTo(finalBooking.getEnd()));
+        assertThat(withBookingDto.getStatus(), equalTo(finalBooking.getStatus()));
+    }
+
+    @Test
+    void getAllBookingsForOwnerStateRejected() {
+        booking.setStatus(BookingState.REJECTED);
+        item.setOwner(user.getId());
+
+        List<ItemWithBookingDto> withBookingDtos = bookingService
+                .getAllBookingsForOwner(user.getId(), "REJECTED", 0, 1);
+
+        ItemWithBookingDto withBookingDto = withBookingDtos.stream()
+                .findFirst()
+                .orElseThrow();
+
+        TypedQuery<Booking> query = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
+        Booking finalBooking = query.setParameter("id", withBookingDto.getId()).getSingleResult();
+
+        assertThat(withBookingDto.getId(), notNullValue());
+        assertThat(withBookingDto.getBooker().getId(), equalTo(finalBooking.getBooker()));
+        assertThat(withBookingDto.getStart(), equalTo(finalBooking.getStart()));
+        assertThat(withBookingDto.getEnd(), equalTo(finalBooking.getEnd()));
+        assertThat(withBookingDto.getStatus(), equalTo(finalBooking.getStatus()));
+    }
+
+    @Test
+    void getAllBookingsForOwnerStateWaiting() {
+        booking.setStatus(BookingState.WAITING);
+        item.setOwner(user.getId());
+
+        List<ItemWithBookingDto> withBookingDtos = bookingService
+                .getAllBookingsForOwner(user.getId(), "WAITING", 0, 1);
 
         ItemWithBookingDto withBookingDto = withBookingDtos.stream()
                 .findFirst()

@@ -67,8 +67,9 @@ public class UserServiceImplTest {
     @Test
     void updateUserById() {
         when(userRepository.save(user)).thenReturn(user);
+        when(userRepository.findById(user.getId())).thenReturn(Optional.ofNullable(user));
 
-        UserDto userDto = userService.saveUser(toUserDto(user));
+        UserDto userDto = userService.updateUserById(user.getId(), toUserDto(user));
 
         assertNotNull(userDto);
         assertEquals(toUserDto(user), userDto);
@@ -105,5 +106,18 @@ public class UserServiceImplTest {
         userService.deleteUserById(user.getId());
 
         assertThrows(EntityNotFoundException.class, () -> userService.getUserById(user.getId()));
+    }
+
+    @Test
+    void test() {
+        try {
+            when(userRepository.save(user)).thenReturn(user);
+
+            user.setEmail(null);
+            userService.saveUser(toUserDto(user));
+        } catch (ValidationException e) {
+            String message = "Некорректный email.";
+            assertEquals(message, e.getMessage());
+        }
     }
 }
