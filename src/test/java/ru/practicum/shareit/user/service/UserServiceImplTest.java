@@ -104,7 +104,6 @@ public class UserServiceImplTest {
         when(userRepository.save(user)).thenReturn(user);
         userRepository.deleteById(user.getId());
         userService.deleteUserById(user.getId());
-
         assertThrows(EntityNotFoundException.class, () -> userService.getUserById(user.getId()));
     }
 
@@ -112,7 +111,6 @@ public class UserServiceImplTest {
     void test() {
         when(userRepository.save(user)).thenReturn(user);
         user.setEmail(null);
-        
         assertThrows(ValidationException.class, () -> userService.saveUser(toUserDto(user)));
     }
 }
