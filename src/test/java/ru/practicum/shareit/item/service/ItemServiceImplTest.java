@@ -11,7 +11,6 @@ import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.exception.EntityNotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
-import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemWithBookingHistory;
 import ru.practicum.shareit.item.model.Comment;
@@ -144,7 +143,7 @@ public class ItemServiceImplTest {
         bookingDto.setStatus(BookingState.APPROVED);
         em.persist(toBooking(bookingDto));
 
-        CommentDto commentDto = new CommentDto();
+        ItemWithBookingHistory.CommentDto commentDto = new ItemWithBookingHistory.CommentDto();
         commentDto.setText("Ну текст");
         commentDto.setItem(itemDto1);
         commentDto.setAuthor(toUserDto(user));
@@ -160,7 +159,7 @@ public class ItemServiceImplTest {
 
     @Test
     void postCommentEmptyText() {
-        CommentDto commentDto = new CommentDto();
+        ItemWithBookingHistory.CommentDto commentDto = new ItemWithBookingHistory.CommentDto();
         commentDto.setText("");
         commentDto.setItem(toItemDto(item));
         commentDto.setAuthor(toUserDto(user));
@@ -173,7 +172,7 @@ public class ItemServiceImplTest {
 
     @Test
     void postCommentFailedTiming() {
-        CommentDto commentDto = new CommentDto();
+        ItemWithBookingHistory.CommentDto commentDto = new ItemWithBookingHistory.CommentDto();
         commentDto.setText("Кадабра");
         commentDto.setItem(toItemDto(item));
         commentDto.setAuthor(toUserDto(user));

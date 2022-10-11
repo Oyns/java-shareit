@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.boot.test.json.JsonContent;
+import ru.practicum.shareit.user.dto.UserDto;
 
 import java.time.LocalDate;
 
@@ -19,7 +20,8 @@ public class ItemWithBookingHistoryTest {
     @Test
     void serializeTest() throws Exception {
         ItemWithBookingHistory.CommentDto withBookingHistory = new ItemWithBookingHistory
-                .CommentDto(1L, "текст", "Егор", LocalDate.of(2022, 10, 10));
+                .CommentDto(1L, "текст", new ItemDto(), "Egor",
+                new UserDto(), LocalDate.of(2022, 10, 10));
 
         JsonContent<ItemWithBookingHistory.CommentDto> result = json.write(withBookingHistory);
 

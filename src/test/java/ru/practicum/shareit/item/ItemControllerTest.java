@@ -10,7 +10,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.model.BookingState;
-import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemWithBookingHistory;
 import ru.practicum.shareit.item.service.ItemServiceImpl;
@@ -60,7 +59,7 @@ public class ItemControllerTest {
             .email("eugen@mailbox.com")
             .build();
 
-    private final CommentDto commentDto = CommentDto.builder()
+    private final ItemWithBookingHistory.CommentDto commentDto = ItemWithBookingHistory.CommentDto.builder()
             .id(1L)
             .text("Очень ценный комментарий")
             .item(itemDto)
@@ -89,8 +88,8 @@ public class ItemControllerTest {
 
     private final ItemWithBookingHistory.CommentDto commentDto1 = new ItemWithBookingHistory
             .CommentDto(commentDto.getId(),
-            commentDto.getText(), commentDto.getAuthorName(),
-            commentDto.getCreated());
+            commentDto.getText(), commentDto.getItem(), commentDto.getAuthorName(),
+            commentDto.getAuthor(), commentDto.getCreated());
 
     private final List<ItemWithBookingHistory.CommentDto> commentDtos = List.of(commentDto1);
 

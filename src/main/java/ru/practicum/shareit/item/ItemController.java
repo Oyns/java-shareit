@@ -2,7 +2,6 @@ package ru.practicum.shareit.item;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemWithBookingHistory;
 import ru.practicum.shareit.item.model.Comment;
@@ -30,7 +29,7 @@ public class ItemController {
 
     @PostMapping("/{itemId}/comment")
     @ResponseBody
-    public CommentDto postComment(@RequestHeader(value = "X-Sharer-User-Id") Long userId,
+    public ItemWithBookingHistory.CommentDto postComment(@RequestHeader(value = "X-Sharer-User-Id") Long userId,
                                   @PathVariable Long itemId,
                                   @RequestBody Comment comment) {
         return itemServiceImpl.postComment(userId, itemId, comment);

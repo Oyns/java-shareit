@@ -7,7 +7,6 @@ import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exception.EntityNotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
-import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemWithBookingHistory;
 import ru.practicum.shareit.item.model.Comment;
@@ -53,13 +52,13 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public CommentDto postComment(Long userId, Long itemId, Comment comment) {
+    public ItemWithBookingHistory.CommentDto postComment(Long userId, Long itemId, Comment comment) {
         validateForPostComment(itemId, comment);
         validateItemOwner(userId);
         ItemDto itemDto = toItemDto(itemRepository.findById(itemId).orElseThrow());
         UserDto userDto = userServiceImpl.getUserById(userId);
         validateItemDto(itemDto);
-        CommentDto commentDto = new CommentDto();
+        ItemWithBookingHistory.CommentDto commentDto = new ItemWithBookingHistory.CommentDto();
         commentDto.setText(comment.getText());
         commentDto.setItem(itemDto);
         commentDto.setAuthorName(userDto.getName());
@@ -94,11 +93,8 @@ public class ItemServiceImpl implements ItemService {
         SimpleBookingDto nextBooking = new SimpleBookingDto();
         if (commentRepository.findCommentByItemId(itemId) != null) {
             Comment comment = commentRepository.findCommentByItemId(itemId);
-            CommentDto commentDto = toCommentDto(comment, itemDto, userServiceImpl.getUserById(comment.getAuthorId()));
-            ItemWithBookingHistory.CommentDto commentDto1 = new ItemWithBookingHistory.CommentDto(commentDto.getId(),
-                    commentDto.getText(), commentDto.getAuthorName(),
-                    commentDto.getCreated());
-            commentDtos.add(commentDto1);
+            ItemWithBookingHistory.CommentDto commentDto = toCommentDto(comment, itemDto, userServiceImpl.getUserById(comment.getAuthorId()));
+            commentDtos.add(commentDto);
         } else {
             itemWithBookingHistory.setComments(new ArrayList<>());
         }
@@ -132,13 +128,9 @@ public class ItemServiceImpl implements ItemService {
                 }
                 if (commentRepository.findCommentByItemId(item.getId()) != null) {
                     Comment comment = commentRepository.findCommentByItemId(item.getId());
-                    CommentDto commentDto = toCommentDto(comment, itemDto,
+                    ItemWithBookingHistory.CommentDto commentDto = toCommentDto(comment, itemDto,
                             userServiceImpl.getUserById(comment.getAuthorId()));
-                    ItemWithBookingHistory.CommentDto commentDto1
-                            = new ItemWithBookingHistory.CommentDto(commentDto.getId(),
-                            commentDto.getText(), commentDto.getAuthorName(),
-                            commentDto.getCreated());
-                    commentDtos.add(commentDto1);
+                    commentDtos.add(commentDto);
                 } else {
                     itemWithBookingHistory.setComments(new ArrayList<>());
                 }
