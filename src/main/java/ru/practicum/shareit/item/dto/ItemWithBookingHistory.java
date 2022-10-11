@@ -25,6 +25,8 @@ public class ItemWithBookingHistory {
     @NoArgsConstructor
     @Setter
     @Getter
+    @EqualsAndHashCode(of = "id")
+    @Builder
     public static class CommentDto {
         private Long id;
         private String text;

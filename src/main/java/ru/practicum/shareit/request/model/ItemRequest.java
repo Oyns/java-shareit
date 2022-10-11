@@ -1,10 +1,10 @@
-package ru.practicum.shareit.request;
+package ru.practicum.shareit.request.model;
 
 import lombok.*;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 
@@ -14,6 +14,7 @@ import java.util.Objects;
 @Getter
 @ToString
 @NotNull
+@Builder
 @Entity
 @Table(name = "requests")
 public class ItemRequest {
@@ -22,6 +23,7 @@ public class ItemRequest {
     private Long id;
 
     @Column(name = "description")
+    @NotNull
     private String description;
 
     @JoinTable(name = "users", joinColumns = @JoinColumn(name = "id"))
@@ -29,7 +31,7 @@ public class ItemRequest {
     private Long requestor;
 
     @Column(name = "created")
-    private LocalDate created;
+    private LocalDateTime created;
 
     @Override
     public boolean equals(Object o) {

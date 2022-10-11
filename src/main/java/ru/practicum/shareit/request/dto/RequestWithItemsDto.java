@@ -1,8 +1,10 @@
 package ru.practicum.shareit.request.dto;
 
 import lombok.*;
+import ru.practicum.shareit.item.dto.ItemDto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -10,9 +12,10 @@ import java.time.LocalDateTime;
 @Getter
 @EqualsAndHashCode(of = "id")
 @Builder
-public class ItemRequestDto {
+public class RequestWithItemsDto {
     private Long id;
     private String description;
-    private Long requestor;
+    private Long requestorId;
     private LocalDateTime created;
+    private List<ItemDto> items;
 }

@@ -23,14 +23,14 @@ public class ItemController {
 
     @PostMapping
     @ResponseBody
-    public ItemDto postItem(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public ItemDto postItem(@RequestHeader(value = "X-Sharer-User-Id") Long userId,
                             @RequestBody ItemDto itemDto) {
         return itemServiceImpl.postItem(userId, itemDto);
     }
 
     @PostMapping("/{itemId}/comment")
     @ResponseBody
-    public CommentDto postComment(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public CommentDto postComment(@RequestHeader(value = "X-Sharer-User-Id") Long userId,
                                   @PathVariable Long itemId,
                                   @RequestBody Comment comment) {
         return itemServiceImpl.postComment(userId, itemId, comment);
