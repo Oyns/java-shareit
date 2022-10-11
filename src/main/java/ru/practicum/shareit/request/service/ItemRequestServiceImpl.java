@@ -75,7 +75,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         validatePageAndSize(from, size);
         RequestWithItemsDto requestWithItemsDto;
         List<RequestWithItemsDto> requestWithItems = new ArrayList<>();
-        if (from == null && size == null) {
+        if (from == null || size == null) {
             List<ItemRequestDto> requests = itemRequestRepository.findAllByRequestor(userId).stream()
                     .map(ItemRequestMapper::toItemRequestDto)
                     .collect(Collectors.toList());
@@ -83,15 +83,14 @@ public class ItemRequestServiceImpl implements ItemRequestService {
                 List<ItemDto> itemDtos = itemRepository.findAllByRequest(itemRequestDto.getId()).stream()
                         .map(ItemMapper::toItemDto)
                         .collect(Collectors.toList());
+                if (itemDtos.isEmpty()) {
+                    return requestWithItems;
+                }
                 requestWithItemsDto = toRequestWithItemsDto(toItemRequest(itemRequestDto), itemDtos);
                 requestWithItems.add(requestWithItemsDto);
-                if (itemDtos.isEmpty()) {
-                    return new ArrayList<>();
-                }
-                return requestWithItems;
             }
+            return requestWithItems;
         } else {
-            assert from != null;
             int page = from / size;
             PageRequest pageRequest = PageRequest.of(page, size, Sort.by("created"));
             List<ItemRequestDto> requests = itemRequestRepository.findAll(pageRequest).stream()
@@ -103,7 +102,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
                         .map(ItemMapper::toItemDto)
                         .collect(Collectors.toList());
                 if (itemDtos.isEmpty()) {
-                    return new ArrayList<>();
+                    return requestWithItems;
                 }
                 requestWithItemsDto = toRequestWithItemsDto(toItemRequest(itemRequestDto), itemDtos);
                 requestWithItems.add(requestWithItemsDto);

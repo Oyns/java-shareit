@@ -38,7 +38,10 @@ public class ItemRequest {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ItemRequest that = (ItemRequest) o;
-        return Objects.equals(id, that.id) && Objects.equals(description, that.description) && Objects.equals(requestor, that.requestor) && Objects.equals(created, that.created);
+        return Objects.equals(id, that.id)
+                && Objects.equals(description, that.description)
+                && Objects.equals(requestor, that.requestor)
+                && Objects.equals(created, that.created);
     }
 
     @Override

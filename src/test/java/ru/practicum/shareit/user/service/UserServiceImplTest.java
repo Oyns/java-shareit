@@ -110,14 +110,9 @@ public class UserServiceImplTest {
 
     @Test
     void test() {
-        try {
-            when(userRepository.save(user)).thenReturn(user);
-
-            user.setEmail(null);
-            userService.saveUser(toUserDto(user));
-        } catch (ValidationException e) {
-            String message = "Некорректный email.";
-            assertEquals(message, e.getMessage());
-        }
+        when(userRepository.save(user)).thenReturn(user);
+        user.setEmail(null);
+        
+        assertThrows(ValidationException.class, () -> userService.saveUser(toUserDto(user)));
     }
 }
