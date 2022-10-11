@@ -53,19 +53,11 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     @Override
     public List<RequestWithItemsDto> getSelfRequests(Long userId) {
         validateItemOwner(userId);
-        RequestWithItemsDto requestWithItemsDto;
         List<RequestWithItemsDto> requestWithItems = new ArrayList<>();
-        List<ItemDto> itemDtos;
         List<ItemRequestDto> requests = itemRequestRepository.findAllByRequestor(userId).stream()
                 .map(ItemRequestMapper::toItemRequestDto)
                 .collect(Collectors.toList());
-        for (ItemRequestDto itemRequestDto : requests) {
-            itemDtos = itemRepository.findAllByRequest(itemRequestDto.getId()).stream()
-                    .map(ItemMapper::toItemDto)
-                    .collect(Collectors.toList());
-            requestWithItemsDto = toRequestWithItemsDto(toItemRequest(itemRequestDto), itemDtos);
-            requestWithItems.add(requestWithItemsDto);
-        }
+        getItemDtosForRequestor(requests, requestWithItems);
         return requestWithItems;
     }
 
@@ -73,35 +65,20 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     public List<RequestWithItemsDto> getRequests(Long userId, Integer from, Integer size) {
         validateItemOwner(userId);
         validatePageAndSize(from, size);
-        RequestWithItemsDto requestWithItemsDto;
         List<RequestWithItemsDto> requestWithItems = new ArrayList<>();
+        int page;
         if (from == null || size == null) {
-            List<ItemRequestDto> requests = itemRequestRepository.findAll().stream()
-                    .filter(itemRequest -> !itemRequest.getRequestor().equals(userId))
-                    .map(ItemRequestMapper::toItemRequestDto)
-                    .collect(Collectors.toList());
-            for (ItemRequestDto itemRequestDto : requests) {
-                List<ItemDto> itemDtos = itemRepository.findAll().stream()
-                        .map(ItemMapper::toItemDto)
-                        .collect(Collectors.toList());
-                requestWithItemsDto = toRequestWithItemsDto(toItemRequest(itemRequestDto), itemDtos);
-                requestWithItems.add(requestWithItemsDto);
-            }
+            size = 1;
+            page = 0;
         } else {
-            int page = from / size;
-            PageRequest pageRequest = PageRequest.of(page, size, Sort.by("created"));
-            List<ItemRequestDto> requests = itemRequestRepository.findAll(pageRequest).stream()
-                    .filter(itemRequest -> !itemRequest.getRequestor().equals(userId))
-                    .map(ItemRequestMapper::toItemRequestDto)
-                    .collect(Collectors.toList());
-            for (ItemRequestDto itemRequestDto : requests) {
-                List<ItemDto> itemDtos = itemRepository.findAllByRequest(itemRequestDto.getId()).stream()
-                        .map(ItemMapper::toItemDto)
-                        .collect(Collectors.toList());
-                requestWithItemsDto = toRequestWithItemsDto(toItemRequest(itemRequestDto), itemDtos);
-                requestWithItems.add(requestWithItemsDto);
-            }
+            page = from / size;
         }
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("created"));
+        List<ItemRequestDto> requests = itemRequestRepository.findAllByRequestorWithoutSelfRequest(userId, pageRequest)
+                .stream()
+                .map(ItemRequestMapper::toItemRequestDto)
+                .collect(Collectors.toList());
+        getItemDtosForRequestor(requests, requestWithItems);
         return requestWithItems;
     }
 
@@ -121,5 +98,16 @@ public class ItemRequestServiceImpl implements ItemRequestService {
                 .filter(user -> user.getId().equals(userId))
                 .findAny()
                 .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+    }
+
+    private void getItemDtosForRequestor(List<ItemRequestDto> requests,
+                                         List<RequestWithItemsDto> requestWithItems) {
+        for (ItemRequestDto itemRequestDto : requests) {
+            List<ItemDto> itemDtos = itemRepository.findAllByRequest(itemRequestDto.getId()).stream()
+                    .map(ItemMapper::toItemDto)
+                    .collect(Collectors.toList());
+            RequestWithItemsDto requestWithItemsDto = toRequestWithItemsDto(toItemRequest(itemRequestDto), itemDtos);
+            requestWithItems.add(requestWithItemsDto);
+        }
     }
 }
