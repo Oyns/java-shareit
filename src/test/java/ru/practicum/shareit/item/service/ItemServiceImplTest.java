@@ -124,6 +124,14 @@ public class ItemServiceImplTest {
     }
 
     @Test
+    void getItemByIdFailed() {
+        Long id = 2L;
+        EntityNotFoundException thrown = assertThrows(EntityNotFoundException.class, () ->
+                itemService.getItemById(id));
+        assertEquals(String.format("Предмета с id %s не существует.", id), thrown.getMessage());
+    }
+
+    @Test
     void postComment() {
         ItemDto itemDto1 = itemService.getItemById(item.getId());
 
@@ -147,6 +155,32 @@ public class ItemServiceImplTest {
 
         assertThat(comment.getId(), notNullValue());
         assertThat(comment.getText(), equalTo(commentDto.getText()));
+    }
+
+    @Test
+    void postCommentEmptyText() {
+        CommentDto commentDto = new CommentDto();
+        commentDto.setText("");
+        commentDto.setItem(toItemDto(item));
+        commentDto.setAuthor(toUserDto(user));
+        commentDto.setAuthorName(user.getName());
+        commentDto.setCreated(LocalDate.now());
+        ValidationException thrown = assertThrows(ValidationException.class, () ->
+                itemService.postComment(user.getId(), item.getId(), toComment(commentDto)));
+        assertEquals("Поле комментария не может быть пустым.", thrown.getMessage());
+    }
+
+    @Test
+    void postCommentFailedTiming() {
+        CommentDto commentDto = new CommentDto();
+        commentDto.setText("Кадабра");
+        commentDto.setItem(toItemDto(item));
+        commentDto.setAuthor(toUserDto(user));
+        commentDto.setAuthorName(user.getName());
+        commentDto.setCreated(LocalDate.now());
+        ValidationException thrown = assertThrows(ValidationException.class, () ->
+                itemService.postComment(user.getId(), item.getId(), toComment(commentDto)));
+        assertEquals("Вы не можете разместить комментарий.", thrown.getMessage());
     }
 
     @Test
@@ -213,6 +247,41 @@ public class ItemServiceImplTest {
         assert commentDto != null;
         assertThat(commentDto.getText(), equalTo(comment1.getText()));
         assertThat(commentDto.getCreated(), equalTo(comment1.getCreated()));
+    }
+
+    @Test
+    void getItemByIdWithBookingHistoryI() {
+        ItemDto itemDto = itemService.getItemById(item.getId());
+
+        BookingDto lastBooking = new BookingDto();
+        lastBooking.setEnd(LocalDateTime.now().minusDays(1));
+        lastBooking.setStart(LocalDateTime.now().minusDays(2));
+        lastBooking.setItemId(itemDto.getId());
+        lastBooking.setBookerId(user.getId());
+        lastBooking.setStatus(BookingState.APPROVED);
+        Booking booking1 = toBooking(lastBooking);
+        em.persist(booking1);
+
+        BookingDto nextBooking = new BookingDto();
+        nextBooking.setEnd(LocalDateTime.now());
+        nextBooking.setStart(LocalDateTime.now().plusDays(2));
+        nextBooking.setItemId(itemDto.getId());
+        nextBooking.setBookerId(user.getId());
+        nextBooking.setStatus(BookingState.APPROVED);
+        em.persist(toBooking(nextBooking));
+
+        ItemWithBookingHistory itemWithBookings = itemService.getItemByIdWithBookingHistory(user.getId(), item.getId());
+
+        TypedQuery<Item> query = em.createQuery("SELECT i FROM Item i WHERE i.id = :id", Item.class);
+        Item item1 = query.setParameter("id", item.getId()).getSingleResult();
+
+        TypedQuery<Booking> query1 = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
+        Booking booking = query1.setParameter("id", booking1.getId()).getSingleResult();
+
+
+        assertThat(itemWithBookings.getName(), equalTo(item1.getName()));
+        assertThat(itemWithBookings.getDescription(), equalTo(item1.getDescription()));
+        assertThat(toBooking(itemWithBookings.getLastBooking()), equalTo(booking));
     }
 
     @Test
