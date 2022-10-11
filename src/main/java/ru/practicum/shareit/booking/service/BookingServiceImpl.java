@@ -143,7 +143,7 @@ public class BookingServiceImpl implements BookingService {
         }
         if (bookingDto.getStart().isAfter(bookingDto.getEnd())
                 || bookingDto.getStart().isBefore(LocalDateTime.now())) {
-            throw new ValidationException("Некорректная даты бронирования");
+            throw new ValidationException("Некорректная дата бронирования");
         }
     }
 
@@ -161,7 +161,8 @@ public class BookingServiceImpl implements BookingService {
         validatePageAndSize(from, size);
         List<Booking> bookings;
         if (from != null && size != null) {
-            Pageable pageRequest = PageRequest.of(from - 1, size, Sort.by("start").descending());
+            int page = from / size;
+            Pageable pageRequest = PageRequest.of(page, size, Sort.by("start").descending());
             bookings = bookingRepository.findBookingsByBooker(userId, pageRequest);
         } else {
             bookings = bookingRepository.findBookingsByBooker(userId).stream()
@@ -233,7 +234,8 @@ public class BookingServiceImpl implements BookingService {
         validatePageAndSize(from, size);
         List<Booking> bookings;
         if (from != null && size != null) {
-            Pageable pageRequest = PageRequest.of(from, size, Sort.by("start").descending());
+            int page = from / size;
+            Pageable pageRequest = PageRequest.of(page, size, Sort.by("start").descending());
             bookings = bookingRepository.findBookingsByOwnerId(userId, pageRequest);
         } else {
             bookings = bookingRepository.findBookingsByOwnerId(userId).stream()

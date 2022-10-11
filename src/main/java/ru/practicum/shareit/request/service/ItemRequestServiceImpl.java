@@ -90,7 +90,8 @@ public class ItemRequestServiceImpl implements ItemRequestService {
             }
         } else {
             assert from != null;
-            PageRequest pageRequest = PageRequest.of(from, size, Sort.by("created"));
+            int page = from / size;
+            PageRequest pageRequest = PageRequest.of(page, size, Sort.by("created"));
             List<ItemRequestDto> requests = itemRequestRepository.findAll(pageRequest).stream()
                     .map(ItemRequestMapper::toItemRequestDto)
                     .collect(Collectors.toList());
