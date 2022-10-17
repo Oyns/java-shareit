@@ -5,7 +5,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.EntityNotFoundException;
 import ru.practicum.shareit.exception.ErrorResponse;
 import ru.practicum.shareit.exception.ValidationException;
@@ -25,13 +24,6 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleValidationException(final ValidationException e) {
         log.info("400 {}", e.getMessage(), e);
-        return new ErrorResponse(e.getMessage());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorResponse handleConflictException(final ConflictException e) {
-        log.info("409 {}", e.getMessage(), e);
         return new ErrorResponse(e.getMessage());
     }
 

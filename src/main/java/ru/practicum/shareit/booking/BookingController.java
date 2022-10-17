@@ -3,6 +3,7 @@ package ru.practicum.shareit.booking;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.booking.dto.BookingDto;
+import ru.practicum.shareit.booking.dto.SimpleBookingDto;
 import ru.practicum.shareit.booking.service.BookingServiceImpl;
 import ru.practicum.shareit.item.dto.ItemWithBookingDto;
 
@@ -22,8 +23,8 @@ public class BookingController {
     @PostMapping
     @ResponseBody
     public BookingDto createBooking(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                    @RequestBody BookingDto bookingDto) {
-        return bookingServiceImpl.createBooking(userId, bookingDto);
+                                    @RequestBody SimpleBookingDto simpleBookingDto) {
+        return bookingServiceImpl.createBooking(userId, simpleBookingDto);
     }
 
     @PatchMapping("{bookingId}")
@@ -42,15 +43,17 @@ public class BookingController {
 
     @GetMapping
     public List<ItemWithBookingDto> getAllBookingsByUserId(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                                           @RequestParam(defaultValue = "ALL",
-                                                                   required = false) String state) {
-        return bookingServiceImpl.getAllBookingsByUserId(userId, state);
+                                                           @RequestParam(required = false) String state,
+                                                           @RequestParam(required = false) Integer from,
+                                                           @RequestParam(required = false) Integer size) {
+        return bookingServiceImpl.getAllBookingsByUserId(userId, state, from, size);
     }
 
     @GetMapping("/owner")
     public List<ItemWithBookingDto> getAllBookingsForOwner(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                                           @RequestParam(defaultValue = "ALL",
-                                                                   required = false) String state) {
-        return bookingServiceImpl.getAllBookingsForOwner(userId, state);
+                                                           @RequestParam(required = false) String state,
+                                                           @RequestParam(required = false) Integer from,
+                                                           @RequestParam(required = false) Integer size) {
+        return bookingServiceImpl.getAllBookingsForOwner(userId, state, from, size);
     }
 }

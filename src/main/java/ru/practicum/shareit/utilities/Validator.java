@@ -1,6 +1,5 @@
 package ru.practicum.shareit.utilities;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.exception.EntityNotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
@@ -8,8 +7,8 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.user.dto.UserDto;
 
 @Component
-@Slf4j
 public class Validator {
+
     public static void validateUserDto(UserDto userDto) throws ValidationException {
         if (userDto.getEmail() == null || userDto.getEmail().isBlank() || !userDto.getEmail().contains("@")) {
             throw new ValidationException("Некорректный email.");
@@ -28,6 +27,12 @@ public class Validator {
         }
         if (!itemDto.getAvailable()) {
             throw new EntityNotFoundException("Предмет занят.");
+        }
+    }
+
+    public static void validatePageAndSize(Integer from, Integer size) {
+        if ((from != null && size != null) && (from < 0 || size < 0)) {
+            throw new ValidationException("Страница и диапазон поиска не могут быть отрицательными.");
         }
     }
 }

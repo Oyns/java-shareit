@@ -15,7 +15,28 @@ public class BookingDto {
     private Long id;
     private LocalDateTime start;
     private LocalDateTime end;
-    private Long itemId;
-    private Long bookerId;
     private BookingState status;
+    private BookerDto booker;
+    private ItemDto item;
+
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Setter
+    @Getter
+    @EqualsAndHashCode(of = "id")
+    @Builder
+    public static class ItemDto {
+        private Long id;
+        private String name;
+    }
+
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Setter
+    @Getter
+    @EqualsAndHashCode(of = "id")
+    @Builder
+    public static class BookerDto {
+        Long id;
+    }
 }

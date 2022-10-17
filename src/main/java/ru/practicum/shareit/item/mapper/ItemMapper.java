@@ -1,10 +1,9 @@
 package ru.practicum.shareit.item.mapper;
 
 import org.springframework.stereotype.Component;
-import ru.practicum.shareit.booking.dto.BookerDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
+import ru.practicum.shareit.booking.dto.SimpleBookingDto;
 import ru.practicum.shareit.booking.model.Booking;
-import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemWithBookingDto;
 import ru.practicum.shareit.item.dto.ItemWithBookingHistory;
@@ -24,7 +23,7 @@ public class ItemMapper {
                 .description(itemDto.getDescription())
                 .available(itemDto.getAvailable())
                 .owner(itemDto.getOwner())
-                .request(itemDto.getRequest())
+                .request(itemDto.getRequestId())
                 .build();
     }
 
@@ -35,11 +34,13 @@ public class ItemMapper {
                 .description(item.getDescription())
                 .available(item.getAvailable())
                 .owner(item.getOwner())
-                .request(item.getRequest())
+                .requestId(item.getRequest())
                 .build();
     }
 
-    public static ItemWithBookingDto toItemWithBookingDto(Booking booking, ItemDto itemDto, BookerDto bookerDto) {
+    public static ItemWithBookingDto toItemWithBookingDto(Booking booking,
+                                                          ItemDto itemDto,
+                                                          BookingDto.BookerDto bookerDto) {
         return ItemWithBookingDto.builder()
                 .id(booking.getId())
                 .start(booking.getStart())
@@ -50,8 +51,8 @@ public class ItemMapper {
                 .build();
     }
 
-    public static CommentDto toCommentDto(Comment comment, ItemDto itemDto, UserDto userDto) {
-        return CommentDto.builder()
+    public static ItemWithBookingHistory.CommentDto toCommentDto(Comment comment, ItemDto itemDto, UserDto userDto) {
+        return ItemWithBookingHistory.CommentDto.builder()
                 .id(comment.getId())
                 .text(comment.getText())
                 .item(itemDto)
@@ -61,7 +62,7 @@ public class ItemMapper {
                 .build();
     }
 
-    public static Comment toComment(CommentDto commentDto) {
+    public static Comment toComment(ItemWithBookingHistory.CommentDto commentDto) {
         return Comment.builder()
                 .id(commentDto.getId())
                 .text(commentDto.getText())
@@ -72,8 +73,8 @@ public class ItemMapper {
     }
 
     public static ItemWithBookingHistory toItemWithBookingHistory(ItemDto itemDto,
-                                                                  BookingDto lastBooking,
-                                                                  BookingDto nextBooking,
+                                                                  SimpleBookingDto lastBooking,
+                                                                  SimpleBookingDto nextBooking,
                                                                   List<ItemWithBookingHistory.CommentDto> commentDtos) {
         return ItemWithBookingHistory.builder()
                 .id(itemDto.getId())
