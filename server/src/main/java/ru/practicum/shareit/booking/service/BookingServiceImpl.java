@@ -19,15 +19,12 @@ import ru.practicum.shareit.user.service.UserServiceImpl;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static ru.practicum.shareit.booking.mapper.BookingMapper.*;
 import static ru.practicum.shareit.item.mapper.ItemMapper.toItemDto;
 import static ru.practicum.shareit.item.mapper.ItemMapper.toItemWithBookingDto;
-import static ru.practicum.shareit.utilities.Validator.validatePageAndSize;
 
 @Service
 public class BookingServiceImpl implements BookingService {
@@ -50,17 +47,14 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingDto createBooking(Long userId, SimpleBookingDto simpleBookingDto) {
         validateUser(userId);
-        ItemDto itemDto = itemServiceImpl.getItemById(simpleBookingDto.getItemId());
-        validateForBookingCreation(userId, itemDto, simpleBookingDto);
         BookingDto bookingDto = new BookingDto();
-        bookingDto.setItem(toBookingItemDto(itemDto));
+        bookingDto.setItem(toBookingItemDto(validateForBookingCreation(userId, simpleBookingDto)));
         bookingDto.setStart(simpleBookingDto.getStart());
         bookingDto.setEnd(simpleBookingDto.getEnd());
         bookingDto.setStatus(BookingState.WAITING);
         bookingDto.setBooker(new BookingDto.BookerDto(userId));
-        Booking booking = bookingRepository.save(toBooking(bookingDto));
-        bookingDto.setId(booking.getId());
-        return bookingDto;
+        return toBookingDto(bookingRepository.save(toBooking(bookingDto)),
+                validateForBookingCreation(userId, simpleBookingDto));
     }
 
     @Override
@@ -75,17 +69,13 @@ public class BookingServiceImpl implements BookingService {
         } else {
             approved = "REJECTED";
         }
-        validateForBookingUpdate(approved, toBookingDto(booking, itemDto));
+        if (booking.getStatus().toString().equals(approved)) {
+            throw new ValidationException("Нельзя изменить статус на идентичный");
+        }
         booking.setStatus(BookingState.valueOf(approved));
-        bookingRepository.save(booking);
-        return ItemWithBookingDto.builder()
-                .id(bookingId)
-                .start(booking.getStart())
-                .end(booking.getEnd())
-                .status(BookingState.valueOf(approved))
-                .booker(new BookingDto.BookerDto(booking.getBooker()))
-                .item(itemDto)
-                .build();
+        return toItemWithBookingDto(bookingRepository.save(booking),
+                itemDto,
+                new BookingDto.BookerDto(booking.getBooker()));
     }
 
     @Override
@@ -98,14 +88,7 @@ public class BookingServiceImpl implements BookingService {
         if (!userId.equals(itemDto.getOwner()) && !userId.equals(booking.getBooker())) {
             throw new EntityNotFoundException("Вы не можете получить данные чужой брони.");
         }
-        return ItemWithBookingDto.builder()
-                .id(bookingId)
-                .start(booking.getStart())
-                .end(booking.getEnd())
-                .status(booking.getStatus())
-                .booker(new BookingDto.BookerDto(booking.getBooker()))
-                .item(itemDto)
-                .build();
+        return toItemWithBookingDto(booking, itemDto, new BookingDto.BookerDto(booking.getBooker()));
     }
 
     @Override
@@ -137,23 +120,15 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
     }
 
-    private void validateForBookingCreation(Long userId, ItemDto itemDto, SimpleBookingDto simpleBookingDto) {
+    private ItemDto validateForBookingCreation(Long userId, SimpleBookingDto simpleBookingDto) {
+        ItemDto itemDto = itemServiceImpl.getItemById(simpleBookingDto.getItemId());
         if (userId.equals(itemDto.getOwner())) {
             throw new EntityNotFoundException("Владелец не может бронировать предмет.");
         }
         if (!itemDto.getAvailable()) {
             throw new ValidationException("Предмет занят другим пользователем.");
         }
-        if (simpleBookingDto.getStart().isAfter(simpleBookingDto.getEnd())
-                || simpleBookingDto.getStart().isBefore(LocalDateTime.now())) {
-            throw new ValidationException("Некорректная дата бронирования");
-        }
-    }
-
-    private void validateForBookingUpdate(String approved, BookingDto bookingDto) {
-        if (bookingDto.getStatus().toString().equals(approved)) {
-            throw new ValidationException("Нельзя изменить статус на идентичный");
-        }
+        return itemDto;
     }
 
     private void validateBookingsForBooker(Long userId,
@@ -161,71 +136,11 @@ public class BookingServiceImpl implements BookingService {
                                            List<ItemWithBookingDto> itemWithBookingDtos,
                                            Integer from,
                                            Integer size) {
-        validatePageAndSize(from, size);
         List<Booking> bookings;
-        if (from != null && size != null) {
-            int page = from / size;
-            Pageable pageRequest = PageRequest.of(page, size, Sort.by("start").descending());
-            bookings = bookingRepository.findBookingsByBooker(userId, pageRequest);
-        } else {
-            bookings = bookingRepository.findBookingsByBooker(userId).stream()
-                    .sorted(Comparator.comparing(Booking::getStart).reversed())
-                    .collect(Collectors.toList());
-        }
-        for (Booking booking : bookings) {
-            ItemDto itemDto = itemServiceImpl.getItemById(booking.getItemId());
-            if (state == null) {
-                itemWithBookingDtos.add(toItemWithBookingDto(booking,
-                        itemDto,
-                        toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
-            } else {
-                switch (state) {
-                    case "ALL":
-                        itemWithBookingDtos.add(toItemWithBookingDto(booking,
-                                itemDto,
-                                toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
-                        break;
-                    case "PAST":
-                        if (booking.getEnd().isBefore(LocalDateTime.now())) {
-                            itemWithBookingDtos.add(toItemWithBookingDto(booking,
-                                    itemDto,
-                                    toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
-                        }
-                        break;
-                    case "FUTURE":
-                        if (booking.getStart().isAfter(LocalDateTime.now())) {
-                            itemWithBookingDtos.add(toItemWithBookingDto(booking,
-                                    itemDto,
-                                    toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
-                        }
-                        break;
-                    case "CURRENT":
-                        if (booking.getStart().isBefore(LocalDateTime.now())
-                                && booking.getEnd().isAfter(LocalDateTime.now())) {
-                            itemWithBookingDtos.add(toItemWithBookingDto(booking,
-                                    itemDto,
-                                    toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
-                        }
-                        break;
-                    case "REJECTED":
-                        if (booking.getStatus().equals(BookingState.REJECTED)) {
-                            itemWithBookingDtos.add(toItemWithBookingDto(booking,
-                                    itemDto,
-                                    toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
-                        }
-                        break;
-                    case "WAITING":
-                        if (booking.getStatus().equals(BookingState.WAITING)) {
-                            itemWithBookingDtos.add(toItemWithBookingDto(booking,
-                                    itemDto,
-                                    toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
-                        }
-                        break;
-                    default:
-                        throw new ValidationException(String.format("Unknown state: %s", state));
-                }
-            }
-        }
+        int page = from / size;
+        Pageable pageRequest = PageRequest.of(page, size, Sort.by("start").descending());
+        bookings = bookingRepository.findBookingsByBooker(userId, pageRequest);
+        pickTheStateCase(itemWithBookingDtos, state, bookings);
     }
 
 
@@ -234,70 +149,62 @@ public class BookingServiceImpl implements BookingService {
                                           List<ItemWithBookingDto> itemWithBookingDtos,
                                           Integer from,
                                           Integer size) {
-        validatePageAndSize(from, size);
         List<Booking> bookings;
-        if (from != null && size != null) {
-            int page = from / size;
-            Pageable pageRequest = PageRequest.of(page, size, Sort.by("start").descending());
-            bookings = bookingRepository.findBookingsByOwnerId(userId, pageRequest);
-        } else {
-            bookings = bookingRepository.findBookingsByOwnerId(userId).stream()
-                    .sorted(Comparator.comparing(Booking::getStart).reversed())
-                    .collect(Collectors.toList());
-        }
+        int page = from / size;
+        Pageable pageRequest = PageRequest.of(page, size, Sort.by("start").descending());
+        bookings = bookingRepository.findBookingsByOwnerId(userId, pageRequest);
+        pickTheStateCase(itemWithBookingDtos, state, bookings);
+    }
+
+    private void pickTheStateCase(List<ItemWithBookingDto> itemWithBookingDtos,
+                                  String state,
+                                  List<Booking> bookings) {
         for (Booking booking : bookings) {
             ItemDto itemDto = itemServiceImpl.getItemById(booking.getItemId());
-            if (state == null) {
-                itemWithBookingDtos.add(toItemWithBookingDto(booking,
-                        itemDto,
-                        toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
-            } else {
-                switch (state) {
-                    case "ALL":
+            switch (state) {
+                case "ALL":
+                    itemWithBookingDtos.add(toItemWithBookingDto(booking,
+                            itemDto,
+                            toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
+                    break;
+                case "PAST":
+                    if (booking.getEnd().isBefore(LocalDateTime.now())) {
                         itemWithBookingDtos.add(toItemWithBookingDto(booking,
                                 itemDto,
                                 toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
-                        break;
-                    case "PAST":
-                        if (booking.getEnd().isBefore(LocalDateTime.now())) {
-                            itemWithBookingDtos.add(toItemWithBookingDto(booking,
-                                    itemDto,
-                                    toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
-                        }
-                        break;
-                    case "FUTURE":
-                        if (booking.getStart().isAfter(LocalDateTime.now())) {
-                            itemWithBookingDtos.add(toItemWithBookingDto(booking,
-                                    itemDto,
-                                    toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
-                        }
-                        break;
-                    case "CURRENT":
-                        if (booking.getStart().isBefore(LocalDateTime.now())
-                                && booking.getEnd().isAfter(LocalDateTime.now())
-                                && booking.getStatus().equals(BookingState.APPROVED)) {
-                            itemWithBookingDtos.add(toItemWithBookingDto(booking,
-                                    itemDto,
-                                    toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
-                        }
-                    case "REJECTED":
-                        if (booking.getStatus().equals(BookingState.REJECTED)) {
-                            itemWithBookingDtos.add(toItemWithBookingDto(booking,
-                                    itemDto,
-                                    toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
-                        }
-                        break;
-                    case "WAITING":
-                        if (booking.getStatus().equals(BookingState.WAITING)) {
-                            itemWithBookingDtos.add(toItemWithBookingDto(booking,
-                                    itemDto,
-                                    toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
-                        }
-                        break;
-                    default:
-                        throw new ValidationException(String.format("Unknown state: %s", state));
-                }
+                    }
+                    break;
+                case "FUTURE":
+                    if (booking.getStart().isAfter(LocalDateTime.now())) {
+                        itemWithBookingDtos.add(toItemWithBookingDto(booking,
+                                itemDto,
+                                toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
+                    }
+                    break;
+                case "CURRENT":
+                    if (booking.getStart().isBefore(LocalDateTime.now())
+                            && booking.getEnd().isAfter(LocalDateTime.now())
+                            && booking.getStatus().equals(BookingState.APPROVED)) {
+                        itemWithBookingDtos.add(toItemWithBookingDto(booking,
+                                itemDto,
+                                toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
+                    }
+                case "REJECTED":
+                    if (booking.getStatus().equals(BookingState.REJECTED)) {
+                        itemWithBookingDtos.add(toItemWithBookingDto(booking,
+                                itemDto,
+                                toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
+                    }
+                    break;
+                case "WAITING":
+                    if (booking.getStatus().equals(BookingState.WAITING)) {
+                        itemWithBookingDtos.add(toItemWithBookingDto(booking,
+                                itemDto,
+                                toBookingDtoFromBooker(toBookingDto(booking, itemDto))));
+                    }
+                    break;
             }
         }
     }
 }
+

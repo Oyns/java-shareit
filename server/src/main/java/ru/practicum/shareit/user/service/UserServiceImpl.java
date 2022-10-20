@@ -12,7 +12,6 @@ import java.util.List;
 
 import static ru.practicum.shareit.user.mapper.UserMapper.toUser;
 import static ru.practicum.shareit.user.mapper.UserMapper.toUserDto;
-import static ru.practicum.shareit.utilities.Validator.validateUserDto;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -25,16 +24,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto saveUser(UserDto userDto) {
-        validateUserDto(userDto);
         return toUserDto(userRepository.save(toUser(userDto)));
     }
 
     @Override
     public UserDto updateUserById(Long userId, UserDto userDto) {
-        User user = userRepository.findById(userId).orElseThrow();
-        validateForUserUpdate(user, userDto);
-        userRepository.save(user);
-        return toUserDto(user);
+        validateForUserUpdate(userId, userDto);
+        return toUserDto(userRepository.save(toUser(userDto)));
     }
 
     @Override
@@ -61,12 +57,14 @@ public class UserServiceImpl implements UserService {
         userRepository.deleteById(userId);
     }
 
-    private void validateForUserUpdate(User user, UserDto userDto) {
-        if (userDto.getEmail() != null) {
-            user.setEmail(userDto.getEmail());
+    private void validateForUserUpdate(Long userId, UserDto userDto) {
+        User user = userRepository.findById(userId).orElseThrow();
+        if (userDto.getEmail() == null) {
+            userDto.setEmail(user.getEmail());
         }
-        if (userDto.getName() != null) {
-            user.setName(userDto.getName());
+        if (userDto.getName() == null) {
+            userDto.setName(user.getName());
         }
+        userDto.setId(user.getId());
     }
 }

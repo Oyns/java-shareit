@@ -31,7 +31,9 @@ public class BookingRepositoryTest {
     void setUp() {
         userRepository.save(new User(1L, "Egor", "egorka@mail.ru"));
         itemRepository.save(new Item(1L, "Item", "Coolest", true, 1L, null));
-        booking = repository.save(new Booking(1L, LocalDateTime.now().minusMinutes(1), LocalDateTime.now().plusMinutes(1),
+        booking = repository.save(new Booking(1L,
+                LocalDateTime.now().minusMinutes(1),
+                LocalDateTime.now().plusMinutes(1),
                 1L, 1L, BookingState.APPROVED));
     }
 

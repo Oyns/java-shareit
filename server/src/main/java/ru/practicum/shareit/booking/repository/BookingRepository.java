@@ -20,13 +20,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findBookingsByBooker(Long userId, Pageable pageable);
 
-    List<Booking> findBookingsByBooker(Long userId);
-
-    @Query("SELECT b FROM Booking b " +
-            "LEFT JOIN Item i ON b.itemId = i.id " +
-            "WHERE i.owner = :owner_id")
-    List<Booking> findBookingsByOwnerId(@Param("owner_id") Long userId);
-
     @Query("SELECT b FROM Booking b " +
             "LEFT JOIN Item i ON b.itemId = i.id " +
             "WHERE i.owner = :owner_id")

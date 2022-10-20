@@ -6,7 +6,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.request.dto.RequestWithItemsDto;
@@ -21,8 +20,6 @@ import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static ru.practicum.shareit.item.mapper.ItemMapper.toItem;
 import static ru.practicum.shareit.request.mapper.ItemRequestMapper.toItemRequestDto;
 
@@ -123,37 +120,6 @@ public class ItemRequestServiceImplTest {
         item.setRequest(itemRequest.getId());
         item.setOwner(user.getId());
         List<RequestWithItemsDto> list = requestService.getRequests(user2.getId(), 0, 1);
-
-        RequestWithItemsDto requestWithItem = list.stream().findFirst().orElseThrow();
-
-        TypedQuery<ItemRequest> query = em
-                .createQuery("SELECT r FROM ItemRequest r WHERE r.id = :id", ItemRequest.class);
-        ItemRequest request = query.setParameter("id", requestWithItem.getId()).getSingleResult();
-
-        TypedQuery<Item> query1 = em.createQuery("SELECT i FROM Item i WHERE i.id = :id", Item.class);
-        Item item1 = query1.setParameter("id", item.getId()).getSingleResult();
-
-        assertThat(requestWithItem.getId(), equalTo(request.getId()));
-        assertThat(toItem(requestWithItem.getItems().get(0)), equalTo(item1));
-        assertThat(requestWithItem.getDescription(), equalTo(request.getDescription()));
-        assertThat(requestWithItem.getCreated(), equalTo(request.getCreated()));
-        assertThat(requestWithItem.getRequestorId(), equalTo(request.getRequestor()));
-    }
-
-    @Test
-    void getRequestsFailedPagination() {
-        item.setRequest(itemRequest.getId());
-        item.setOwner(user.getId());
-        ValidationException thrown = assertThrows(ValidationException.class, () ->
-                requestService.getRequests(user.getId(), -1, -1));
-        assertEquals("Страница и диапазон поиска не могут быть отрицательными.", thrown.getMessage());
-    }
-
-    @Test
-    void getRequestsWithoutPagination() {
-        item.setRequest(itemRequest.getId());
-        item.setOwner(user.getId());
-        List<RequestWithItemsDto> list = requestService.getRequests(user2.getId(), null, null);
 
         RequestWithItemsDto requestWithItem = list.stream().findFirst().orElseThrow();
 

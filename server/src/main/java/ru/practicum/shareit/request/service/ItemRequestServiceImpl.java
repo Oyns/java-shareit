@@ -4,7 +4,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.EntityNotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.repository.ItemRepository;
@@ -20,7 +19,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static ru.practicum.shareit.request.mapper.ItemRequestMapper.*;
-import static ru.practicum.shareit.utilities.Validator.validatePageAndSize;
 
 @Service
 public class ItemRequestServiceImpl implements ItemRequestService {
@@ -42,9 +40,6 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     @Override
     public ItemRequestDto postItemRequest(Long userId, ItemRequestDto itemRequestDto) {
         validateItemOwner(userId);
-        if (itemRequestDto.getDescription() == null) {
-            throw new ValidationException("Описание не может быть пустым.");
-        }
         itemRequestDto.setRequestor(userId);
         itemRequestDto.setCreated(LocalDateTime.now());
         return toItemRequestDto(itemRequestRepository.save(toItemRequest(itemRequestDto)));
@@ -57,29 +52,20 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         List<ItemRequestDto> requests = itemRequestRepository.findAllByRequestor(userId).stream()
                 .map(ItemRequestMapper::toItemRequestDto)
                 .collect(Collectors.toList());
-        getItemDtosForRequestor(requests, requestWithItems);
-        return requestWithItems;
+        return getItemDtosForRequestor(requests, requestWithItems);
     }
 
     @Override
     public List<RequestWithItemsDto> getRequests(Long userId, Integer from, Integer size) {
         validateItemOwner(userId);
-        validatePageAndSize(from, size);
         List<RequestWithItemsDto> requestWithItems = new ArrayList<>();
-        int page;
-        if (from == null || size == null) {
-            size = 1;
-            page = 0;
-        } else {
-            page = from / size;
-        }
+        int page = from / size;
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by("created"));
         List<ItemRequestDto> requests = itemRequestRepository.findAllByRequestorWithoutSelfRequest(userId, pageRequest)
                 .stream()
                 .map(ItemRequestMapper::toItemRequestDto)
                 .collect(Collectors.toList());
-        getItemDtosForRequestor(requests, requestWithItems);
-        return requestWithItems;
+        return getItemDtosForRequestor(requests, requestWithItems);
     }
 
     @Override
@@ -100,8 +86,8 @@ public class ItemRequestServiceImpl implements ItemRequestService {
                 .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
     }
 
-    private void getItemDtosForRequestor(List<ItemRequestDto> requests,
-                                         List<RequestWithItemsDto> requestWithItems) {
+    private List<RequestWithItemsDto> getItemDtosForRequestor(List<ItemRequestDto> requests,
+                                                              List<RequestWithItemsDto> requestWithItems) {
         for (ItemRequestDto itemRequestDto : requests) {
             List<ItemDto> itemDtos = itemRepository.findAllByRequest(itemRequestDto.getId()).stream()
                     .map(ItemMapper::toItemDto)
@@ -109,5 +95,6 @@ public class ItemRequestServiceImpl implements ItemRequestService {
             RequestWithItemsDto requestWithItemsDto = toRequestWithItemsDto(toItemRequest(itemRequestDto), itemDtos);
             requestWithItems.add(requestWithItemsDto);
         }
+        return requestWithItems;
     }
 }

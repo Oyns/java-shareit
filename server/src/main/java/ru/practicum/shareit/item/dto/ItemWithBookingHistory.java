@@ -29,11 +29,11 @@ public class ItemWithBookingHistory {
     @EqualsAndHashCode(of = "id")
     @Builder
     public static class CommentDto {
-    private Long id;
-    private String text;
-    private ItemDto item;
-    private String authorName;
-    private UserDto author;
-    private LocalDate created;
+        private Long id;
+        private String text;
+        private ItemDto item;
+        private String authorName;
+        private UserDto author;
+        private LocalDate created;
     }
 }

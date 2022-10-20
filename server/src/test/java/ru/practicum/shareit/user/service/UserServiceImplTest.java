@@ -3,7 +3,6 @@ package ru.practicum.shareit.user.service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.practicum.shareit.exception.EntityNotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
@@ -40,28 +39,6 @@ public class UserServiceImplTest {
 
         assertNotNull(userDto);
         assertEquals(toUserDto(user), userDto);
-    }
-
-    @Test
-    void saveUserWithEmptyEmail() {
-        when(userRepository.save(user)).thenReturn(user);
-
-        user.setEmail("");
-
-        ValidationException thrown = assertThrows(ValidationException.class, () ->
-                userService.saveUser(toUserDto(user)));
-        assertEquals("Некорректный email.", thrown.getMessage());
-    }
-
-    @Test
-    void saveUserWithNoEmail() {
-        when(userRepository.save(user)).thenReturn(user);
-
-        user.setEmail(null);
-
-        ValidationException thrown = assertThrows(ValidationException.class, () ->
-                userService.saveUser(toUserDto(user)));
-        assertEquals("Некорректный email.", thrown.getMessage());
     }
 
     @Test
@@ -105,12 +82,5 @@ public class UserServiceImplTest {
         userRepository.deleteById(user.getId());
         userService.deleteUserById(user.getId());
         assertThrows(EntityNotFoundException.class, () -> userService.getUserById(user.getId()));
-    }
-
-    @Test
-    void test() {
-        when(userRepository.save(user)).thenReturn(user);
-        user.setEmail(null);
-        assertThrows(ValidationException.class, () -> userService.saveUser(toUserDto(user)));
     }
 }

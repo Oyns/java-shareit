@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 
 import static ru.practicum.shareit.booking.mapper.BookingMapper.toSimpleBookingDto;
 import static ru.practicum.shareit.item.mapper.ItemMapper.*;
-import static ru.practicum.shareit.utilities.Validator.validateItemDto;
 
 @Service
 public class ItemServiceImpl implements ItemService {
@@ -45,7 +44,6 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto postItem(Long userId, ItemDto itemDto) {
-        validateItemDto(itemDto);
         validateItemOwner(userId);
         itemDto.setOwner(userId);
         return toItemDto(itemRepository.save(toItem(itemDto)));
@@ -55,14 +53,10 @@ public class ItemServiceImpl implements ItemService {
     public ItemWithBookingHistory.CommentDto postComment(Long userId,
                                                          Long itemId,
                                                          ItemWithBookingHistory.CommentDto comment) {
-        System.err.println(userId);
-        System.err.println(itemId);
-        System.err.println(comment);
-        validateForPostComment(itemId, comment);
+        validateForPostComment(itemId);
         validateItemOwner(userId);
         ItemDto itemDto = toItemDto(itemRepository.findById(itemId).orElseThrow());
         UserDto userDto = userServiceImpl.getUserById(userId);
-        validateItemDto(itemDto);
         ItemWithBookingHistory.CommentDto commentDto = new ItemWithBookingHistory.CommentDto();
         commentDto.setText(comment.getText());
         commentDto.setItem(itemDto);
@@ -75,10 +69,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto updateItemInfo(Long userId, Long itemId, ItemDto itemDto) {
         validateItemOwner(userId);
-        Item item = itemRepository.findById(itemId).orElse(null);
-        validateItemForUpdate(itemDto, item, userId);
-        itemRepository.save(item);
-        return toItemDto(item);
+        return toItemDto(itemRepository.save(validateItemForUpdate(itemDto, itemId, userId)));
     }
 
 
@@ -184,30 +175,27 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
-    private void validateForPostComment(Long itemId, ItemWithBookingHistory.CommentDto comment) {
-        if (comment == null || comment.getText().isEmpty()) {
-            throw new ValidationException("Поле комментария не может быть пустым.");
-        }
+    private void validateForPostComment(Long itemId) {
         if (bookingRepository.findBookingByItemIdAndEndIsAfter(itemId, LocalDateTime.now()) == null) {
             throw new ValidationException("Вы не можете разместить комментарий.");
         }
     }
 
-    private void validateItemForUpdate(ItemDto itemDto, Item item, Long userId) {
-        if (item == null) {
-            throw new ValidationException("Предмета не существует");
-        }
+    private Item validateItemForUpdate(ItemDto itemDto, Long itemId, Long userId) {
+        Item item = itemRepository.findById(itemId).orElseThrow(() ->
+                new ValidationException("Предмета не существует"));
         if (!item.getOwner().equals(userId) && item.getAvailable().equals(false)) {
             throw new EntityNotFoundException("Нельзя изменить данные чужой вещи");
-        }
-        if (itemDto.getName() != null) {
-            item.setName(itemDto.getName());
         }
         if (itemDto.getDescription() != null) {
             item.setDescription(itemDto.getDescription());
         }
+        if (itemDto.getName() != null) {
+            item.setName(itemDto.getName());
+        }
         if (itemDto.getAvailable() != null && !itemDto.getAvailable().equals(item.getAvailable())) {
             item.setAvailable(itemDto.getAvailable());
         }
+        return item;
     }
 }

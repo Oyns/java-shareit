@@ -29,8 +29,8 @@ public class ItemController {
     @PostMapping("/{itemId}/comment")
     @ResponseBody
     public ItemWithBookingHistory.CommentDto postComment(@RequestHeader(value = "X-Sharer-User-Id") Long userId,
-                                  @PathVariable Long itemId,
-                                  @RequestBody ItemWithBookingHistory.CommentDto commentDto) {
+                                                         @PathVariable Long itemId,
+                                                         @RequestBody ItemWithBookingHistory.CommentDto commentDto) {
         return itemServiceImpl.postComment(userId, itemId, commentDto);
     }
 

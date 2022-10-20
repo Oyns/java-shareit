@@ -6,9 +6,8 @@ import lombok.*;
 @NoArgsConstructor
 @Setter
 @Getter
-@ToString
-@Builder
 @EqualsAndHashCode(of = "id")
+@Builder
 public class UserDto {
     private Long id;
     private String name;

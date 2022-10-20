@@ -108,15 +108,6 @@ public class BookingServiceImplTest {
     }
 
     @Test
-    void createBookingFailedTiming() {
-        booking.setEnd(LocalDateTime.now().minusYears(5));
-        ValidationException thrown = assertThrows(ValidationException.class, () ->
-                bookingService.createBooking(user.getId(), toSimpleBookingDto(booking)));
-
-        assertEquals("Некорректная дата бронирования", thrown.getMessage());
-    }
-
-    @Test
     void updateBooking() {
         booking.setStatus(BookingState.REJECTED);
         item.setOwner(user.getId());
@@ -129,17 +120,6 @@ public class BookingServiceImplTest {
         Booking booking1 = query.setParameter("id", booking.getId()).getSingleResult();
 
         assertThat(booking1.getStatus(), equalTo(BookingState.APPROVED));
-    }
-
-    @Test
-    void updateBookingFailedState() {
-        item.setOwner(user.getId());
-        ValidationException thrown = assertThrows(ValidationException.class, () ->
-                bookingService.updateBooking(user.getId(),
-                        booking.getId(),
-                        "true"));
-
-        assertEquals("Нельзя изменить статус на идентичный", thrown.getMessage());
     }
 
     @Test
@@ -164,27 +144,6 @@ public class BookingServiceImplTest {
 
         List<ItemWithBookingDto> withBookingDtos = bookingService
                 .getAllBookingsByUserId(user.getId(), "ALL", 0, 1);
-
-        ItemWithBookingDto withBookingDto = withBookingDtos.stream()
-                .findFirst()
-                .orElseThrow();
-
-        TypedQuery<Booking> query = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
-        Booking finalBooking = query.setParameter("id", withBookingDto.getId()).getSingleResult();
-
-        assertThat(withBookingDto.getId(), notNullValue());
-        assertThat(withBookingDto.getBooker().getId(), equalTo(finalBooking.getBooker()));
-        assertThat(withBookingDto.getStart(), equalTo(finalBooking.getStart()));
-        assertThat(withBookingDto.getEnd(), equalTo(finalBooking.getEnd()));
-        assertThat(withBookingDto.getStatus(), equalTo(finalBooking.getStatus()));
-    }
-
-    @Test
-    void getAllBookingsByUserIdWithoutPagesAndState() {
-        item.setOwner(user.getId());
-
-        List<ItemWithBookingDto> withBookingDtos = bookingService
-                .getAllBookingsByUserId(user.getId(), null, null, null);
 
         ItemWithBookingDto withBookingDto = withBookingDtos.stream()
                 .findFirst()
@@ -314,42 +273,11 @@ public class BookingServiceImplTest {
     }
 
     @Test
-    void getAllBookingsByUserIdFailedState() {
-        String state = "Fail";
-        ValidationException thrown = assertThrows(ValidationException.class, () ->
-                bookingService
-                        .getAllBookingsByUserId(user.getId(), state, 0, 1));
-
-        assertEquals(String.format("Unknown state: %s", state), thrown.getMessage());
-    }
-
-    @Test
     void getAllBookingsForOwnerStateAll() {
         item.setOwner(user.getId());
 
         List<ItemWithBookingDto> withBookingDtos = bookingService
                 .getAllBookingsForOwner(user.getId(), "ALL", 0, 1);
-
-        ItemWithBookingDto withBookingDto = withBookingDtos.stream()
-                .findFirst()
-                .orElseThrow();
-
-        TypedQuery<Booking> query = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
-        Booking finalBooking = query.setParameter("id", withBookingDto.getId()).getSingleResult();
-
-        assertThat(withBookingDto.getId(), notNullValue());
-        assertThat(withBookingDto.getBooker().getId(), equalTo(finalBooking.getBooker()));
-        assertThat(withBookingDto.getStart(), equalTo(finalBooking.getStart()));
-        assertThat(withBookingDto.getEnd(), equalTo(finalBooking.getEnd()));
-        assertThat(withBookingDto.getStatus(), equalTo(finalBooking.getStatus()));
-    }
-
-    @Test
-    void getAllBookingsForOwnerWithoutStateAndPages() {
-        item.setOwner(user.getId());
-
-        List<ItemWithBookingDto> withBookingDtos = bookingService
-                .getAllBookingsForOwner(user.getId(), null, null, null);
 
         ItemWithBookingDto withBookingDto = withBookingDtos.stream()
                 .findFirst()
@@ -476,16 +404,5 @@ public class BookingServiceImplTest {
         assertThat(withBookingDto.getStart(), equalTo(finalBooking.getStart()));
         assertThat(withBookingDto.getEnd(), equalTo(finalBooking.getEnd()));
         assertThat(withBookingDto.getStatus(), equalTo(finalBooking.getStatus()));
-    }
-
-    @Test
-    void getAllBookingsForOwnerFailedState() {
-        item.setOwner(user.getId());
-        String state = "Fail";
-        ValidationException thrown = assertThrows(ValidationException.class, () ->
-                bookingService
-                        .getAllBookingsForOwner(user.getId(), state, 0, 1));
-
-        assertEquals(String.format("Unknown state: %s", state), thrown.getMessage());
     }
 }

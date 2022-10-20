@@ -9,7 +9,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingState;
-import ru.practicum.shareit.exception.EntityNotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemWithBookingHistory;
@@ -89,50 +88,6 @@ public class ItemServiceImplTest {
     }
 
     @Test
-    void postItemWithoutStatus() {
-        item.setAvailable(null);
-
-        ValidationException thrown = assertThrows(ValidationException.class, () ->
-                itemService.postItem(user.getId(), toItemDto(item)));
-        assertEquals("Статус состояния отсутствует.", thrown.getMessage());
-    }
-
-    @Test
-    void postItemWithoutName() {
-        item.setName("");
-
-        ValidationException thrown = assertThrows(ValidationException.class, () ->
-                itemService.postItem(user.getId(), toItemDto(item)));
-        assertEquals("Отсутствует название предмета.", thrown.getMessage());
-    }
-
-    @Test
-    void postItemWithoutDescription() {
-        item.setDescription(null);
-
-        ValidationException thrown = assertThrows(ValidationException.class, () ->
-                itemService.postItem(user.getId(), toItemDto(item)));
-        assertEquals("Отсутствует описание предмета", thrown.getMessage());
-    }
-
-    @Test
-    void postItemFailedAvailable() {
-        item.setAvailable(false);
-
-        EntityNotFoundException thrown = assertThrows(EntityNotFoundException.class, () ->
-                itemService.postItem(user.getId(), toItemDto(item)));
-        assertEquals("Предмет занят.", thrown.getMessage());
-    }
-
-    @Test
-    void getItemByIdFailed() {
-        Long id = 2L;
-        EntityNotFoundException thrown = assertThrows(EntityNotFoundException.class, () ->
-                itemService.getItemById(id));
-        assertEquals(String.format("Предмета с id %s не существует.", id), thrown.getMessage());
-    }
-
-    @Test
     void postComment() {
         ItemDto itemDto1 = itemService.getItemById(item.getId());
 
@@ -157,19 +112,6 @@ public class ItemServiceImplTest {
 
         assertThat(comment.getId(), notNullValue());
         assertThat(comment.getText(), equalTo(commentDto.getText()));
-    }
-
-    @Test
-    void postCommentEmptyText() {
-        ItemWithBookingHistory.CommentDto commentDto = new ItemWithBookingHistory.CommentDto();
-        commentDto.setText("");
-        commentDto.setItem(toItemDto(item));
-        commentDto.setAuthor(toUserDto(user));
-        commentDto.setAuthorName(user.getName());
-        commentDto.setCreated(LocalDate.now());
-        ValidationException thrown = assertThrows(ValidationException.class, () ->
-                itemService.postComment(user.getId(), item.getId(), commentDto));
-        assertEquals("Поле комментария не может быть пустым.", thrown.getMessage());
     }
 
     @Test
